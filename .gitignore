@@ -1,0 +1,52 @@
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vs/
+.vscode/*
+!.vscode/extensions.json
+*.user
+*.suo
+
+# ---- .NET ----
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.dll
+*.pdb
+*.userprefs
+*.nupkg
+*.snupkg
+TestResults/
+coverage*.json
+coverage*.xml
+*.coverage
+*.trx
+
+# ---- Angular / Node ----
+node_modules/
+dist/
+.angular/
+frontend/pharmacy-pos/dist/
+frontend/pharmacy-pos/.angular/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+tests/E2ETests/test-results/
+tests/E2ETests/playwright-report/
+tests/E2ETests/blob-report/
+.playwright-mcp/
+
+# ---- Environment / secrets ----
+.env
+.env.*
+!.env.example
+*.pfx
+*.pem
+*.key
+
+# ---- Docker / data ----
+deploy/data/
+pgdata/

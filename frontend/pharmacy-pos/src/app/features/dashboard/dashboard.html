@@ -1,0 +1,85 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <p class="eyebrow">Platform</p>
+      <h1>Operations overview</h1>
+      <p class="lede">
+        Session, tenant and tenant-isolation status for this PharmaPOS environment.
+      </p>
+    </div>
+    <span
+      class="status"
+      [class.status--ok]="info()"
+      [class.status--down]="error()"
+      [class.status--idle]="loading()"
+    >
+      @if (loading()) {
+        Checking…
+      } @else if (error()) {
+        API unreachable
+      } @else {
+        API {{ info()?.status }}
+      }
+    </span>
+  </header>
+
+  @if (error(); as message) {
+    <p class="alert" role="alert">{{ message }}</p>
+  }
+
+  <div class="grid">
+    <article class="card">
+      <h2>API</h2>
+      @if (info(); as api) {
+        <dl class="facts">
+          <div><dt>Name</dt><dd>{{ api.name }}</dd></div>
+          <div><dt>Version</dt><dd>{{ api.version }}</dd></div>
+          <div><dt>Environment</dt><dd>{{ api.environment }}</dd></div>
+          <div>
+            <dt>Server time (UTC)</dt>
+            <dd>{{ api.serverTimeUtc | date: 'medium' }}</dd>
+          </div>
+        </dl>
+      } @else {
+        <p class="muted">No data yet.</p>
+      }
+    </article>
+
+    <article class="card">
+      <h2>Identity</h2>
+      @if (who(); as identity) {
+        <dl class="facts">
+          <div><dt>Username</dt><dd>{{ identity.username ?? '—' }}</dd></div>
+          <div><dt>Email</dt><dd>{{ identity.email ?? '—' }}</dd></div>
+          <div>
+            <dt>Tenant</dt>
+            <dd><code>{{ identity.tenantIdentifier ?? 'unresolved' }}</code></dd>
+          </div>
+        </dl>
+      } @else if (isAuthenticated()) {
+        <p class="muted">Loading identity…</p>
+      } @else {
+        <p class="muted">Sign in to establish a session.</p>
+        <button type="button" class="button" (click)="signIn()">Sign in with Keycloak</button>
+      }
+    </article>
+
+    <article class="card card--wide">
+      <h2>Permissions</h2>
+      @if (who()?.permissions?.length) {
+        <ul class="chips">
+          @for (permission of who()!.permissions; track permission) {
+            <li class="chip">{{ permission }}</li>
+          }
+        </ul>
+        <p class="muted small">
+          These are echoed from the validated access token; the API re-checks every request.
+        </p>
+      } @else if (isAuthenticated()) {
+        <p class="muted">No permissions are granted to this account.</p>
+      } @else {
+        <p class="muted">Permissions appear once signed in.</p>
+      }
+    </article>
+  </div>
+</section>

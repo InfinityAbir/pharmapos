@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PharmaPOS.Api/PharmaPOS.Api.csproj" />
+    <Project Path="src/PharmaPOS.Application/PharmaPOS.Application.csproj" />
+    <Project Path="src/PharmaPOS.Domain/PharmaPOS.Domain.csproj" />
+    <Project Path="src/PharmaPOS.Infrastructure/PharmaPOS.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PharmaPOS.IntegrationTests/PharmaPOS.IntegrationTests.csproj" />
+    <Project Path="tests/PharmaPOS.UnitTests/PharmaPOS.UnitTests.csproj" />
+  </Folder>
+</Solution>

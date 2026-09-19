@@ -1,0 +1,51 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Security</p>
+    <h1>Audit log</h1>
+    <p class="lede">
+      Tenant-scoped, append-only record of security- and business-relevant actions. Rows are filtered
+      to your tenant by the database, not by the client.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>platform.audit.read</code> permission.
+    </p>
+  } @else if (error(); as message) {
+    <p class="alert" role="alert">{{ message }}</p>
+  } @else if (entries().length === 0) {
+    <p class="muted">No audit entries recorded for this tenant yet.</p>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">When (UTC)</th>
+            <th scope="col">Action</th>
+            <th scope="col">Actor</th>
+            <th scope="col">Entity</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of entries(); track entry.id) {
+            <tr>
+              <td class="nowrap">{{ entry.occurredAtUtc | date: 'short' }}</td>
+              <td><code>{{ entry.action }}</code></td>
+              <td>{{ entry.actorSubject ?? '—' }}</td>
+              <td>
+                @if (entry.entityType) {
+                  {{ entry.entityType }}@if (entry.entityId) {<span> · {{ entry.entityId }}</span>}
+                } @else {
+                  —
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

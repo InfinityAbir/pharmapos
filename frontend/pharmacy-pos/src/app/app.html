@@ -1,0 +1,41 @@
+<header class="appbar">
+  <div class="appbar__inner">
+    <a class="brand" routerLink="/dashboard">
+      <span class="brand__mark" aria-hidden="true">Rx</span>
+      <span class="brand__text">
+        <strong>PharmaPOS</strong>
+        <small>Pharmacy operations</small>
+      </span>
+    </a>
+
+    <nav class="nav" aria-label="Primary">
+      @if (keycloak.isAuthenticated()) {
+        <a routerLink="/dashboard" routerLinkActive="is-active">Dashboard</a>
+        <a routerLink="/audit" routerLinkActive="is-active">Audit log</a>
+      }
+    </nav>
+
+    <div class="session">
+      @if (keycloak.isAuthenticated()) {
+        <span class="session__user" [title]="keycloak.email() ?? ''">
+          {{ keycloak.username() ?? 'signed in' }}
+        </span>
+        @if (keycloak.tenantId(); as tenant) {
+          <span class="session__tenant">{{ tenant }}</span>
+        }
+        <button type="button" class="button button--ghost" (click)="signOut()">Sign out</button>
+      } @else {
+        <button type="button" class="button" (click)="signIn()">Sign in</button>
+      }
+    </div>
+  </div>
+</header>
+
+<main class="content">
+  <router-outlet />
+</main>
+
+<footer class="footer">
+  <span>PharmaPOS · Phase 0 foundation</span>
+  <span>{{ year }}</span>
+</footer>
