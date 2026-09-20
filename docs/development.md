@@ -115,6 +115,16 @@ Realm-level notes:
   when the realm's user-profile `unmanagedAttributePolicy` is `ENABLED` (live instances only;
   realm imports bypass validation). Without it, attribute writes are silently stripped and the
   token carries no `tenant_id` claim.
+- The login page uses the `pharmapos` theme (`deploy/keycloak/themes/pharmapos`, CSS-only
+  extension of the base theme — no forked templates). After changing it, browsers need a hard
+  refresh (cached CSS); no Keycloak restart is required for CSS edits.
+- Never update the realm with a full-representation PUT built from truncated JSON
+  (`ConvertTo-Json -Depth N` silently mangles deep `components` config). This once regenerated
+  the realm signing keys, breaking API token validation (`IDX10503`, unknown `kid`) until the
+  API re-fetched JWKS on restart. Prefer targeted endpoints (per-user, per-client, components,
+  users/profile). If logins suddenly 401 with `Security.Authentication` key errors after realm
+  administration, compare the token `kid` against `/realms/pharmapos/protocol/openid-connect/certs`
+  and restart the API to force a metadata refresh.
 
 ## 6. Troubleshooting
 

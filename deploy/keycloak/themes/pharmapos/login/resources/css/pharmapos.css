@@ -1,0 +1,67 @@
+/* PharmaPOS login branding: same accent and surfaces as the SPA (see styles.css).
+   Verified against the Keycloak 26 base theme DOM: PF4 submit (#kc-login.pf-m-primary),
+   .pf-c-form-control inputs, .card-pf card, #kc-header-wrapper header. ID and .login-pf
+   scoping beat the base rules without forking any template. */
+
+:root {
+  --pharmapos-accent: #0f9d8f;
+  --pharmapos-accent-strong: #0b7c71;
+  --pharmapos-text: #16202c;
+  --pharmapos-muted: #64748b;
+  --pharmapos-border: #e3e8ee;
+}
+
+.login-pf body {
+  background-color: #f4f6f8;
+  background-image: radial-gradient(
+    1200px 480px at 15% -10%,
+    rgba(15, 157, 143, 0.12),
+    transparent
+  );
+  color: var(--pharmapos-text);
+}
+
+/* Card holding the login form. */
+.login-pf .card-pf {
+  border: 1px solid var(--pharmapos-border);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(22, 32, 44, 0.08);
+  max-width: 560px;
+}
+
+/* Realm header text. */
+.login-pf #kc-header-wrapper {
+  color: var(--pharmapos-text);
+  background-image: none;
+  font-size: 20px;
+  letter-spacing: 0;
+  padding-top: 24px;
+}
+
+/* Primary button in brand accent. */
+.login-pf #kc-login {
+  background-color: var(--pharmapos-accent-strong);
+  background-image: none;
+  border-color: var(--pharmapos-accent-strong);
+  border-radius: 9px;
+}
+
+.login-pf #kc-login:hover,
+.login-pf #kc-login:focus,
+.login-pf #kc-login:active {
+  background-color: var(--pharmapos-accent);
+  background-image: none;
+  border-color: var(--pharmapos-accent);
+}
+
+/* Links in brand accent. */
+.login-pf a {
+  color: var(--pharmapos-accent-strong);
+}
+
+/* Inputs: brand focus ring. */
+.login-pf .pf-c-form-control:focus {
+  border-color: var(--pharmapos-accent);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px rgba(15, 157, 143, 0.45);
+  outline: none;
+}

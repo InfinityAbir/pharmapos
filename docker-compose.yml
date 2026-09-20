@@ -31,6 +31,7 @@ services:
       - "${KEYCLOAK_PORT:-8090}:8080"
     volumes:
       - ./deploy/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./deploy/keycloak/themes/pharmapos:/opt/keycloak/themes/pharmapos:ro
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '200' <&3"]
       interval: 15s
