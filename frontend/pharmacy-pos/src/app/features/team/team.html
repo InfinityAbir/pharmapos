@@ -1,0 +1,108 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Tenant</p>
+    <h1>Team</h1>
+    <p class="lede">
+      Members of the current tenant, their status and their roles. Memberships are for identities
+      that already exist in the realm — provisioning brand-new Keycloak users is a later phase.
+      Changes are guarded by <code>tenant.members.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>tenant.members.manage</code> permission.
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    @if (members().length === 0) {
+      <p class="muted">No members in this tenant yet.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Member</th>
+              <th scope="col">Status</th>
+              <th scope="col">Roles</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (member of members(); track member.membershipId) {
+              <tr>
+                <td>
+                  <strong>{{ member.displayName }}</strong>
+                  <div class="muted small">{{ member.email }}</div>
+                  @if (member.isDefault) {
+                    <span class="pill">default</span>
+                  }
+                  @if (!member.userActive) {
+                    <span class="pill pill--warn">user deactivated</span>
+                  }
+                </td>
+                <td>
+                  <span class="pill" [class.pill--warn]="member.status !== 'Active'">
+                    {{ member.status }}
+                  </span>
+                </td>
+                <td>
+                  @if (rolesUnavailable()) {
+                    <span class="muted small">
+                      @if (member.roles.length) {
+                        {{ member.roles.join(', ') }}
+                      } @else {
+                        No roles.
+                      }
+                      <br />Role editing needs <code>tenant.roles.manage</code>.
+                    </span>
+                  } @else {
+                    <div class="checks">
+                      @for (role of roles(); track role.id) {
+                        <label class="check">
+                          <input
+                            type="checkbox"
+                            [name]="member.membershipId + '-' + role.id"
+                            [checked]="draftFor(member).includes(role.name)"
+                            (change)="toggleRole(member, role.name, $any($event.target).checked)"
+                          />
+                          {{ role.name }}
+                        </label>
+                      }
+                    </div>
+                    @if (draftChanged(member)) {
+                      <button
+                        type="button"
+                        class="button button--small"
+                        [disabled]="savingId() === member.membershipId"
+                        (click)="saveRoles(member)"
+                      >
+                        {{ savingId() === member.membershipId ? 'Saving…' : 'Save roles' }}
+                      </button>
+                    }
+                  }
+                </td>
+                <td class="actions">
+                  @if (member.status === 'Active') {
+                    <button type="button" class="button button--small" (click)="setStatus(member, 'Inactive')">
+                      Deactivate
+                    </button>
+                  } @else {
+                    <button type="button" class="button button--small" (click)="setStatus(member, 'Active')">
+                      Activate
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

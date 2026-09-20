@@ -3,6 +3,7 @@ using Finbuckle.MultiTenant.EntityFrameworkCore;
 using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
 using PharmaPOS.Domain.Auditing;
+using PharmaPOS.Domain.Identity;
 
 namespace PharmaPOS.Infrastructure.Persistence;
 
@@ -14,8 +15,9 @@ namespace PharmaPOS.Infrastructure.Persistence;
 /// mismatch enforcement on save (writes). The current tenant is bound at construction and is
 /// immutable for the lifetime of the context, which is what makes isolation trustworthy.
 ///
-/// Phase 0 maps only <see cref="AuditLog"/>. Business entities arrive in later phases and are
-/// marked multi-tenant the same way.
+/// Phase 1 adds the identity graph: users, tenant memberships, roles and permissions. Roles,
+/// memberships and their join rows are tenant-scoped; users and the permission catalog are
+/// platform-owned.
 /// </summary>
 public sealed class AppDbContext : MultiTenantDbContext
 {
@@ -27,6 +29,12 @@ public sealed class AppDbContext : MultiTenantDbContext
     }
 
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<ApplicationUser> ApplicationUsers => Set<ApplicationUser>();
+    public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<MembershipRole> MembershipRoles => Set<MembershipRole>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,5 +43,9 @@ public sealed class AppDbContext : MultiTenantDbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
         modelBuilder.Entity<AuditLog>().IsMultiTenant();
+        modelBuilder.Entity<TenantMembership>().IsMultiTenant();
+        modelBuilder.Entity<Role>().IsMultiTenant();
+        modelBuilder.Entity<RolePermission>().IsMultiTenant();
+        modelBuilder.Entity<MembershipRole>().IsMultiTenant();
     }
 }

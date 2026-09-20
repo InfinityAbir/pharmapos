@@ -1,0 +1,133 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Tenant</p>
+    <h1>Roles</h1>
+    <p class="lede">
+      Roles of the current tenant and the permissions they grant. System roles are seeded and
+      cannot be renamed or deleted. Changes are guarded by
+      <code>tenant.roles.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>tenant.roles.manage</code> permission.
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    <form class="panel" (ngSubmit)="save()">
+      <h2>{{ editingId() ? 'Edit role' : 'New role' }}</h2>
+      <div class="fields">
+        <label>
+          Name
+          <input
+            type="text"
+            name="name"
+            [(ngModel)]="name"
+            placeholder="Pharmacist"
+            autocomplete="off"
+            maxlength="64"
+          />
+        </label>
+        <label>
+          Description
+          <input
+            type="text"
+            name="description"
+            [(ngModel)]="description"
+            placeholder="What this role is for"
+            autocomplete="off"
+            maxlength="256"
+          />
+        </label>
+      </div>
+      <fieldset>
+        <legend>Permissions</legend>
+        <div class="checks">
+          @for (entry of catalog; track entry.code) {
+            <label class="check">
+              <input
+                type="checkbox"
+                [name]="'perm-' + entry.code"
+                [checked]="selected.includes(entry.code)"
+                (change)="togglePermission(entry.code, $any($event.target).checked)"
+              />
+              <span>
+                <code>{{ entry.code }}</code>
+                <small>{{ entry.description }}</small>
+              </span>
+            </label>
+          }
+        </div>
+      </fieldset>
+      @if (formError(); as message) {
+        <p class="alert" role="alert">{{ message }}</p>
+      }
+      <div class="row">
+        <button type="submit" class="button" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Create role' }}
+        </button>
+        @if (editingId()) {
+          <button type="button" class="button button--ghost" (click)="startCreate()">Cancel</button>
+        }
+      </div>
+    </form>
+
+    @if (roles().length === 0) {
+      <p class="muted">No roles defined for this tenant yet.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Role</th>
+              <th scope="col">Permissions</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (role of roles(); track role.id) {
+              <tr>
+                <td>
+                  <strong>{{ role.name }}</strong>
+                  @if (role.isSystem) {
+                    <span class="pill">system</span>
+                  }
+                  @if (role.description) {
+                    <div class="muted small">{{ role.description }}</div>
+                  }
+                </td>
+                <td>
+                  @if (role.permissions.length) {
+                    <ul class="chips">
+                      @for (permission of role.permissions; track permission) {
+                        <li class="chip"><code>{{ permission }}</code></li>
+                      }
+                    </ul>
+                  } @else {
+                    <span class="muted">No permissions yet.</span>
+                  }
+                </td>
+                <td class="actions">
+                  <button type="button" class="button button--small" (click)="startEdit(role)">
+                    Edit
+                  </button>
+                  @if (!role.isSystem) {
+                    <button type="button" class="button button--small button--danger" (click)="remove(role)">
+                      Delete
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

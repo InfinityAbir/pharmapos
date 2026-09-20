@@ -1,12 +1,13 @@
 namespace PharmaPOS.Application.Common.Authorization;
 
+/// <summary>Descriptor for the platform permission catalog (code, module, description).</summary>
+public sealed record PermissionDescriptor(string Code, string Module, string? Description);
+
 /// <summary>
-/// The permission catalog. Permission codes are the contract between the server (which enforces
-/// them) and Keycloak (which can surface them as a <c>permissions</c> claim). Business-module
-/// permissions are added by their own phases; Phase 0 defines platform/security permissions only.
-///
-/// Codes are never trusted from the client — they are either carried in a validated JWT by the
-/// identity provider or resolved server-side from tenant membership.
+/// The permission catalog. Codes are the contract between the server (which enforces them) and the
+/// database (which stores them in the <c>permissions</c> table and grants them to tenant roles).
+/// Codes are never trusted from the client; the API resolves the caller's permissions server-side
+/// from their tenant membership.
 /// </summary>
 public static class Permissions
 {
@@ -16,4 +17,23 @@ public static class Permissions
         public const string UsersManage = "platform.users.manage";
         public const string AuditRead = "platform.audit.read";
     }
+
+    public static class Tenant
+    {
+        public const string MembersManage = "tenant.members.manage";
+        public const string RolesManage = "tenant.roles.manage";
+    }
+
+    /// <summary>Complete catalog, used for seeding and for validating role definitions.</summary>
+    public static IReadOnlyList<PermissionDescriptor> All { get; } =
+    [
+        new(Permissions.Platform.TenantsManage, "platform", "Manage tenants across the SaaS."),
+        new(Permissions.Platform.UsersManage, "platform", "Manage platform users and identities."),
+        new(Permissions.Platform.AuditRead, "platform", "Read the audit log."),
+        new(Permissions.Tenant.MembersManage, "tenant", "Manage the tenant's users and their roles."),
+        new(Permissions.Tenant.RolesManage, "tenant", "Manage the tenant's roles and their permissions."),
+    ];
+
+    /// <summary>Whether a permission code exists in the catalog.</summary>
+    public static bool Contains(string code) => All.Any(descriptor => descriptor.Code == code);
 }

@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { PERMISSIONS } from './core/auth/permissions';
 import { KeycloakService } from './core/auth/keycloak.service';
+import { SessionService } from './core/session/session.service';
 
 @Component({
   selector: 'app-root',
@@ -8,15 +10,28 @@ import { KeycloakService } from './core/auth/keycloak.service';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
+export class App implements OnInit {
   protected readonly keycloak = inject(KeycloakService);
+  protected readonly session = inject(SessionService);
   protected readonly year = new Date().getFullYear();
+
+  protected readonly canReadAudit = PERMISSIONS.platformAuditRead;
+  protected readonly canManageTenants = PERMISSIONS.platformTenantsManage;
+  protected readonly canManageMembers = PERMISSIONS.tenantMembersManage;
+  protected readonly canManageRoles = PERMISSIONS.tenantRolesManage;
+
+  ngOnInit(): void {
+    if (this.keycloak.isAuthenticated()) {
+      void this.session.refresh();
+    }
+  }
 
   protected signIn(): void {
     void this.keycloak.login();
   }
 
   protected signOut(): void {
+    this.session.clear();
     void this.keycloak.logout();
   }
 }

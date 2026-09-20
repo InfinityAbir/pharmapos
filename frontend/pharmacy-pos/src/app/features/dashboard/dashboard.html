@@ -47,33 +47,53 @@
 
     <article class="card">
       <h2>Identity</h2>
-      @if (who(); as identity) {
+      @if (session.context(); as identity) {
         <dl class="facts">
-          <div><dt>Username</dt><dd>{{ identity.username ?? '—' }}</dd></div>
-          <div><dt>Email</dt><dd>{{ identity.email ?? '—' }}</dd></div>
+          <div><dt>Username</dt><dd>{{ identity.username }}</dd></div>
+          <div><dt>Email</dt><dd>{{ identity.email }}</dd></div>
           <div>
             <dt>Tenant</dt>
-            <dd><code>{{ identity.tenantIdentifier ?? 'unresolved' }}</code></dd>
+            <dd><code>{{ identity.tenantIdentifier }}</code> · {{ identity.tenantName }}</dd>
           </div>
+          <div><dt>Membership</dt><dd>{{ identity.membershipStatus }}</dd></div>
         </dl>
       } @else if (isAuthenticated()) {
-        <p class="muted">Loading identity…</p>
+        @if (session.forbidden()) {
+          <p class="muted">This account has no active membership in the current tenant.</p>
+        } @else {
+          <p class="muted">Loading identity…</p>
+        }
       } @else {
         <p class="muted">Sign in to establish a session.</p>
         <button type="button" class="button" (click)="signIn()">Sign in with Keycloak</button>
       }
     </article>
 
+    <article class="card">
+      <h2>Roles</h2>
+      @if (session.context()?.roles?.length) {
+        <ul class="chips">
+          @for (role of session.context()!.roles; track role) {
+            <li class="chip">{{ role }}</li>
+          }
+        </ul>
+      } @else if (isAuthenticated()) {
+        <p class="muted">No roles are assigned to this account.</p>
+      } @else {
+        <p class="muted">Roles appear once signed in.</p>
+      }
+    </article>
+
     <article class="card card--wide">
       <h2>Permissions</h2>
-      @if (who()?.permissions?.length) {
+      @if (session.context()?.permissions?.length) {
         <ul class="chips">
-          @for (permission of who()!.permissions; track permission) {
+          @for (permission of session.context()!.permissions; track permission) {
             <li class="chip">{{ permission }}</li>
           }
         </ul>
         <p class="muted small">
-          These are echoed from the validated access token; the API re-checks every request.
+          Resolved server-side from your tenant membership; the API re-checks every request.
         </p>
       } @else if (isAuthenticated()) {
         <p class="muted">No permissions are granted to this account.</p>

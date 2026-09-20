@@ -32,38 +32,88 @@ public sealed class PermissionAuthorizationTests
     }
 
     [Fact]
-    public async Task Handler_grants_when_the_validated_token_carries_the_permission()
+    public async Task Handler_grants_when_the_membership_graph_grants_the_permission()
     {
         var requirement = new PermissionRequirement(Permissions.Platform.AuditRead);
-        var context = BuildContext(requirement, Permissions.Platform.AuditRead);
+        var context = BuildContext(requirement, sub: "subject-1");
+        var resolver = new StubMembershipResolver(
+            new MemberAccess(
+                UserId: Guid.NewGuid(),
+                MembershipId: Guid.NewGuid(),
+                Email: "admin@pharmapos.local",
+                IsDefault: true,
+                Roles: ["Platform Admin"],
+                Permissions: [Permissions.Platform.AuditRead]));
 
-        await new PermissionAuthorizationHandler().HandleAsync(context);
+        await new PermissionAuthorizationHandler(resolver).HandleAsync(context);
 
         context.HasSucceeded.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Handler_denies_when_the_permission_is_absent()
+    public async Task Handler_denies_when_the_membership_lacks_the_permission()
+    {
+        var requirement = new PermissionRequirement(Permissions.Platform.TenantsManage);
+        var context = BuildContext(requirement, sub: "subject-1");
+        var resolver = new StubMembershipResolver(
+            new MemberAccess(
+                UserId: Guid.NewGuid(),
+                MembershipId: Guid.NewGuid(),
+                Email: "owner@demo-pharmacy.local",
+                IsDefault: true,
+                Roles: ["Owner"],
+                Permissions: [Permissions.Platform.AuditRead]));
+
+        await new PermissionAuthorizationHandler(resolver).HandleAsync(context);
+
+        context.HasSucceeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Handler_denies_when_there_is_no_active_membership()
     {
         var requirement = new PermissionRequirement(Permissions.Platform.AuditRead);
-        var context = BuildContext(requirement, Permissions.Platform.TenantsManage);
+        var context = BuildContext(requirement, sub: "stranger");
 
-        await new PermissionAuthorizationHandler().HandleAsync(context);
+        await new PermissionAuthorizationHandler(new StubMembershipResolver(null)).HandleAsync(context);
+
+        context.HasSucceeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Handler_denies_when_the_principal_carries_no_identity()
+    {
+        var requirement = new PermissionRequirement(Permissions.Platform.AuditRead);
+        var identity = new ClaimsIdentity(authenticationType: "Test");
+        var context = new AuthorizationHandlerContext(
+            [requirement],
+            new ClaimsPrincipal(identity),
+            resource: null);
+
+        await new PermissionAuthorizationHandler(new StubMembershipResolver(null)).HandleAsync(context);
 
         context.HasSucceeded.Should().BeFalse();
     }
 
     private static AuthorizationHandlerContext BuildContext(
         PermissionRequirement requirement,
-        string permission)
+        string sub)
     {
         var identity = new ClaimsIdentity(
-            [new Claim(PermissionAuthorizationHandler.PermissionClaimType, permission)],
+            [new Claim("sub", sub)],
             authenticationType: "Test");
 
         return new AuthorizationHandlerContext(
             [requirement],
             new ClaimsPrincipal(identity),
             resource: null);
+    }
+
+    private sealed class StubMembershipResolver(MemberAccess? access) : IMembershipResolver
+    {
+        public Task<MemberAccess?> ResolveAccessAsync(
+            string subjectOrUsername,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(access);
     }
 }

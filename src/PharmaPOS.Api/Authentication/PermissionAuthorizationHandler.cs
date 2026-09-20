@@ -1,28 +1,45 @@
 using Microsoft.AspNetCore.Authorization;
+using PharmaPOS.Application.Common.Authorization;
 
 namespace PharmaPOS.Api.Authentication;
 
 /// <summary>
-/// Grants access when the authenticated principal carries the required <c>permissions</c> claim.
+/// Grants access when the database membership graph grants the required permission to the caller
+/// for the current tenant.
 ///
-/// Phase 0 reads permissions from the Keycloak-issued, signature-validated token. Phase 1 adds
-/// tenant-scoped permissions resolved from <c>TenantMembership</c> in the database, at which point
-/// this handler will consult that source (or run alongside a membership-based handler). Client
-/// claims are never trusted directly from the request — only from the validated token.
+/// The token proves <i>who</i> the caller is (<c>sub</c> / <c>preferred_username</c>) and <i>which
+/// tenant</i> is active (<c>tenant_id</c>, consumed by Finbuckle before this handler runs).
+/// <i>What</i> the caller may do is resolved server-side from
+/// <c>ApplicationUser → TenantMembership → Role → Permission</c> via
+/// <see cref="IMembershipResolver"/>. Callers without an active membership in the current tenant
+/// resolve to <c>null</c> and are denied. Registered as scoped: the resolver needs the
+/// request-scoped tenant-filtered context.
 /// </summary>
 public sealed class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
-    public const string PermissionClaimType = "permissions";
+    private readonly IMembershipResolver _membershipResolver;
 
-    protected override Task HandleRequirementAsync(
+    public PermissionAuthorizationHandler(IMembershipResolver membershipResolver)
+        => _membershipResolver = membershipResolver;
+
+    protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         PermissionRequirement requirement)
     {
-        if (context.User.HasClaim(PermissionClaimType, requirement.Permission))
+        var subject = context.User.FindFirst("sub")?.Value;
+        var username = context.User.FindFirst("preferred_username")?.Value;
+        var identity = !string.IsNullOrWhiteSpace(subject) ? subject : username;
+
+        if (string.IsNullOrWhiteSpace(identity))
+        {
+            return;
+        }
+
+        var access = await _membershipResolver.ResolveAccessAsync(identity);
+
+        if (access is not null && access.Permissions.Contains(requirement.Permission))
         {
             context.Succeed(requirement);
         }
-
-        return Task.CompletedTask;
     }
 }

@@ -3,9 +3,10 @@
 A multi-tenant SaaS point-of-sale platform for small and medium pharmacies, built with an
 architecture and security posture intended for production from the first commit.
 
-> **Current status: Phase 0 — foundation and security.** The solution builds, tests and runs
-> end-to-end (Keycloak login → tenant-scoped API call), but pharmacy business functionality
-> (catalogue, sales, inventory, purchasing) is intentionally **not** implemented yet.
+> **Current status: Phase 1 — identity & tenancy.** The solution builds, tests and runs
+> end-to-end (Keycloak login → server-resolved membership → tenant administration), but pharmacy
+> business functionality (catalogue, sales, inventory, purchasing) is intentionally **not**
+> implemented yet.
 
 ## What exists today
 
@@ -14,12 +15,12 @@ architecture and security posture intended for production from the first commit.
 | Clean Architecture solution (.NET 10) | Domain / Application / Infrastructure / Api |
 | Multi-tenancy | Finbuckle.MultiTenant, shared database + `TenantId` discriminator, EF Core global query filters |
 | Authentication | Keycloak 26 (OIDC), Authorization Code + PKCE (S256) SPA, bearer-only API |
-| Authorization | Server-side permission policies (`HasPermission`), permissions carried as token claims and re-checked per request |
+| Authorization | Server-side permission policies (`HasPermission`) resolved per request from the database membership graph (`ApplicationUser → TenantMembership → Role → Permission`); token claims are ignored (ADR-0012) |
 | Audit logging | Append-only, tenant-scoped audit log written via the application layer |
 | API hardening | Explicit CORS allow-list, security headers, rate limiting, RFC 7807 error handling, correlation ids |
 | Observability | Serilog structured logging, liveness/readiness health checks |
-| Frontend | Angular 22 (zoneless, standalone components), authenticated shell, dashboard, audit log view |
-| Tests | 16 unit + 4 integration (real PostgreSQL via Testcontainers) + 6 frontend unit |
+| Frontend | Angular 22 (zoneless, standalone components), authenticated shell, dashboard, audit log view, Tenants/Team/Roles administration with permission-gated navigation |
+| Tests | 42 unit + 18 integration (real PostgreSQL via Testcontainers) + 11 frontend unit |
 
 Detailed design lives in [`docs/architecture.md`](docs/architecture.md) and the decision records in
 [`docs/adr/`](docs/adr/).

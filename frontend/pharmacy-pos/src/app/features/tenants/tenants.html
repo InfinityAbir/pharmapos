@@ -1,0 +1,97 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Platform</p>
+    <h1>Tenants</h1>
+    <p class="lede">
+      Platform-wide tenant directory. Creating or suspending a tenant is guarded by
+      <code>platform.tenants.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>platform.tenants.manage</code> permission.
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    <form class="panel" (ngSubmit)="create()">
+      <h2>New tenant</h2>
+      <div class="fields">
+        <label>
+          Identifier
+          <input
+            type="text"
+            name="identifier"
+            [(ngModel)]="identifier"
+            placeholder="green-life-pharmacy"
+            autocomplete="off"
+            maxlength="64"
+          />
+        </label>
+        <label>
+          Name
+          <input
+            type="text"
+            name="name"
+            [(ngModel)]="name"
+            placeholder="Green Life Pharmacy"
+            autocomplete="off"
+            maxlength="160"
+          />
+        </label>
+      </div>
+      @if (formError(); as message) {
+        <p class="alert" role="alert">{{ message }}</p>
+      }
+      <button type="submit" class="button" [disabled]="saving()">
+        {{ saving() ? 'Creating…' : 'Create tenant' }}
+      </button>
+    </form>
+
+    @if (tenants().length === 0) {
+      <p class="muted">No tenants registered yet.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Identifier</th>
+              <th scope="col">Name</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tenant of tenants(); track tenant.identifier) {
+              <tr>
+                <td><code>{{ tenant.identifier }}</code></td>
+                <td>{{ tenant.name }}</td>
+                <td>
+                  <span class="pill" [class.pill--suspended]="tenant.status !== 'Active'">
+                    {{ tenant.status }}
+                  </span>
+                </td>
+                <td class="actions">
+                  @if (tenant.status === 'Active') {
+                    <button type="button" class="button button--small" (click)="setStatus(tenant, 'Suspended')">
+                      Suspend
+                    </button>
+                  } @else {
+                    <button type="button" class="button button--small" (click)="setStatus(tenant, 'Active')">
+                      Reactivate
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

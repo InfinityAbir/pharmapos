@@ -11,11 +11,20 @@ export interface PlatformInfo {
   readonly status: string;
 }
 
-export interface WhoAmI {
+/**
+ * Server-resolved session context (GET /platform/whoami). Identity, tenant, roles and
+ * permissions come from the database membership graph — never from client-supplied values.
+ */
+export interface CurrentMembership {
   readonly subject: string | null;
-  readonly username: string | null;
-  readonly email: string | null;
-  readonly tenantIdentifier: string | null;
+  readonly username: string;
+  readonly email: string;
+  readonly tenantIdentifier: string;
+  readonly tenantName: string;
+  readonly userStatus: string;
+  readonly membershipStatus: string;
+  readonly isDefaultMembership: boolean;
+  readonly roles: readonly string[];
   readonly permissions: readonly string[];
 }
 
@@ -41,8 +50,8 @@ export class PlatformApi {
     return this.http.get<PlatformInfo>(`${this.baseUrl}/info`);
   }
 
-  whoami(): Observable<WhoAmI> {
-    return this.http.get<WhoAmI>(`${this.baseUrl}/whoami`);
+  whoami(): Observable<CurrentMembership> {
+    return this.http.get<CurrentMembership>(`${this.baseUrl}/whoami`);
   }
 
   auditLogs(take = 50): Observable<readonly AuditLogEntry[]> {

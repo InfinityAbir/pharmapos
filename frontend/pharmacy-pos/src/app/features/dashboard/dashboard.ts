@@ -2,7 +2,8 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { KeycloakService } from '../../core/auth/keycloak.service';
-import { PlatformApi, PlatformInfo, WhoAmI } from '../../core/http/platform-api.service';
+import { PlatformApi, PlatformInfo } from '../../core/http/platform-api.service';
+import { SessionService } from '../../core/session/session.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -13,10 +14,10 @@ import { PlatformApi, PlatformInfo, WhoAmI } from '../../core/http/platform-api.
 export class Dashboard implements OnInit {
   private readonly api = inject(PlatformApi);
   private readonly keycloak = inject(KeycloakService);
+  protected readonly session = inject(SessionService);
 
   protected readonly isAuthenticated = this.keycloak.isAuthenticated;
   protected readonly info = signal<PlatformInfo | undefined>(undefined);
-  protected readonly who = signal<WhoAmI | undefined>(undefined);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | undefined>(undefined);
 
@@ -34,15 +35,11 @@ export class Dashboard implements OnInit {
 
     try {
       const info = await firstValueFrom(this.api.info());
-
-      if (!this.keycloak.isAuthenticated()) {
-        this.info.set(info);
-        return;
-      }
-
-      const who = await firstValueFrom(this.api.whoami());
       this.info.set(info);
-      this.who.set(who);
+
+      if (this.keycloak.isAuthenticated() && !this.session.loaded()) {
+        await this.session.refresh();
+      }
     } catch {
       this.error.set('The PharmaPOS API could not be reached.');
     } finally {

@@ -11,7 +11,18 @@
     <nav class="nav" aria-label="Primary">
       @if (keycloak.isAuthenticated()) {
         <a routerLink="/dashboard" routerLinkActive="is-active">Dashboard</a>
-        <a routerLink="/audit" routerLinkActive="is-active">Audit log</a>
+        @if (session.hasPermission(canReadAudit)) {
+          <a routerLink="/audit" routerLinkActive="is-active">Audit log</a>
+        }
+        @if (session.hasPermission(canManageTenants)) {
+          <a routerLink="/tenants" routerLinkActive="is-active">Tenants</a>
+        }
+        @if (session.hasPermission(canManageMembers)) {
+          <a routerLink="/team" routerLinkActive="is-active">Team</a>
+        }
+        @if (session.hasPermission(canManageRoles)) {
+          <a routerLink="/roles" routerLinkActive="is-active">Roles</a>
+        }
       }
     </nav>
 
@@ -36,6 +47,6 @@
 </main>
 
 <footer class="footer">
-  <span>PharmaPOS · Phase 0 foundation</span>
+  <span>PharmaPOS · Phase 1 identity &amp; tenancy</span>
   <span>{{ year }}</span>
 </footer>

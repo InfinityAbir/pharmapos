@@ -95,7 +95,8 @@ builder.Services
 // ---------------------------------------------------------------------------------------------
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
-builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+// Scoped: the handler resolves permissions through the request-scoped membership graph.
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
 // ---------------------------------------------------------------------------------------------
 // MVC, OpenAPI/Swagger.
