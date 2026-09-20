@@ -1,0 +1,145 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Catalog</p>
+    <h1>Categories &amp; manufacturers</h1>
+    <p class="lede">
+      Reference data for the medicine catalog. Deletion is refused while medicines reference a
+      row. Guarded by <code>tenant.medicines.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>tenant.medicines.manage</code> permission.
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+    @if (notice(); as message) {
+      <p class="notice" role="status">{{ message }}</p>
+    }
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Categories</h2>
+        <form class="inline" (ngSubmit)="saveCategory()">
+          <input
+            type="text"
+            name="categoryName"
+            [(ngModel)]="categoryName"
+            placeholder="e.g. Analgesic"
+            maxlength="100"
+            autocomplete="off"
+            aria-label="Category name"
+          />
+          <input
+            type="text"
+            name="categoryDescription"
+            [(ngModel)]="categoryDescription"
+            placeholder="Description (optional)"
+            maxlength="256"
+            autocomplete="off"
+            aria-label="Category description"
+          />
+          <button type="submit" class="button button--small">
+            {{ editingCategoryId ? 'Save' : 'Add' }}
+          </button>
+          @if (editingCategoryId) {
+            <button type="button" class="button button--small button--ghost" (click)="cancelEditCategory()">
+              Cancel
+            </button>
+          }
+        </form>
+        @if (categories().length === 0) {
+          <p class="muted">No categories yet.</p>
+        } @else {
+          <ul class="rows">
+            @for (category of categories(); track category.id) {
+              <li>
+                <span>
+                  <strong>{{ category.name }}</strong>
+                  @if (category.description) {
+                    <span class="muted small"> · {{ category.description }}</span>
+                  }
+                </span>
+                <span class="row-actions">
+                  <button type="button" class="link" (click)="startEditCategory(category)">Edit</button>
+                  <button type="button" class="link link--danger" (click)="removeCategory(category)">
+                    Delete
+                  </button>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <section class="panel">
+        <h2>Manufacturers</h2>
+        <form class="inline" (ngSubmit)="saveManufacturer()">
+          <input
+            type="text"
+            name="manufacturerName"
+            [(ngModel)]="manufacturerName"
+            placeholder="e.g. Square Pharmaceuticals"
+            maxlength="128"
+            autocomplete="off"
+            aria-label="Manufacturer name"
+          />
+          <input
+            type="text"
+            name="manufacturerCountry"
+            [(ngModel)]="manufacturerCountry"
+            placeholder="Country (optional)"
+            maxlength="64"
+            autocomplete="off"
+            aria-label="Manufacturer country"
+          />
+          <button type="submit" class="button button--small">
+            {{ editingManufacturerId ? 'Save' : 'Add' }}
+          </button>
+          @if (editingManufacturerId) {
+            <button
+              type="button"
+              class="button button--small button--ghost"
+              (click)="cancelEditManufacturer()"
+            >
+              Cancel
+            </button>
+          }
+        </form>
+        @if (manufacturers().length === 0) {
+          <p class="muted">No manufacturers yet.</p>
+        } @else {
+          <ul class="rows">
+            @for (manufacturer of manufacturers(); track manufacturer.id) {
+              <li>
+                <span>
+                  <strong>{{ manufacturer.name }}</strong>
+                  @if (manufacturer.country) {
+                    <span class="muted small"> · {{ manufacturer.country }}</span>
+                  }
+                </span>
+                <span class="row-actions">
+                  <button type="button" class="link" (click)="startEditManufacturer(manufacturer)">
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="link link--danger"
+                    (click)="removeManufacturer(manufacturer)"
+                  >
+                    Delete
+                  </button>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  }
+</section>

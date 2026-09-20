@@ -3,6 +3,7 @@ using Finbuckle.MultiTenant.EntityFrameworkCore;
 using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
 using PharmaPOS.Domain.Auditing;
+using PharmaPOS.Domain.Catalog;
 using PharmaPOS.Domain.Identity;
 
 namespace PharmaPOS.Infrastructure.Persistence;
@@ -35,6 +36,10 @@ public sealed class AppDbContext : MultiTenantDbContext
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<MembershipRole> MembershipRoles => Set<MembershipRole>();
+    public DbSet<Manufacturer> Manufacturers => Set<Manufacturer>();
+    public DbSet<MedicineCategory> MedicineCategories => Set<MedicineCategory>();
+    public DbSet<Medicine> Medicines => Set<Medicine>();
+    public DbSet<PharmacyProfile> PharmacyProfiles => Set<PharmacyProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,5 +52,9 @@ public sealed class AppDbContext : MultiTenantDbContext
         modelBuilder.Entity<Role>().IsMultiTenant();
         modelBuilder.Entity<RolePermission>().IsMultiTenant();
         modelBuilder.Entity<MembershipRole>().IsMultiTenant();
+        modelBuilder.Entity<Manufacturer>().IsMultiTenant();
+        modelBuilder.Entity<MedicineCategory>().IsMultiTenant();
+        modelBuilder.Entity<Medicine>().IsMultiTenant();
+        modelBuilder.Entity<PharmacyProfile>().IsMultiTenant();
     }
 }

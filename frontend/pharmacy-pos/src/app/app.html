@@ -23,6 +23,13 @@
         @if (session.hasPermission(canManageRoles)) {
           <a routerLink="/roles" routerLinkActive="is-active">Roles</a>
         }
+        @if (session.hasPermission(canReadMedicines)) {
+          <a routerLink="/medicines" routerLinkActive="is-active">Medicines</a>
+          <a routerLink="/pharmacy-profile" routerLinkActive="is-active">Pharmacy</a>
+        }
+        @if (session.hasPermission(canManageMedicines)) {
+          <a routerLink="/catalog-data" routerLinkActive="is-active">Catalog data</a>
+        }
       }
     </nav>
 

@@ -35,5 +35,25 @@ export const routes: Routes = [
     canActivate: [permissionGuard(PERMISSIONS.tenantRolesManage)],
     loadComponent: () => import('./features/roles/roles').then((m) => m.RolesPage),
   },
+  {
+    path: 'medicines',
+    title: 'Medicines · PharmaPOS',
+    canActivate: [permissionGuard(PERMISSIONS.tenantMedicinesRead)],
+    loadComponent: () => import('./features/medicines/medicines').then((m) => m.MedicinesPage),
+  },
+  {
+    path: 'catalog-data',
+    title: 'Catalog data · PharmaPOS',
+    canActivate: [permissionGuard(PERMISSIONS.tenantMedicinesManage)],
+    loadComponent: () =>
+      import('./features/catalog-data/catalog-data').then((m) => m.CatalogDataPage),
+  },
+  {
+    path: 'pharmacy-profile',
+    title: 'Pharmacy profile · PharmaPOS',
+    canActivate: [permissionGuard(PERMISSIONS.tenantMedicinesRead)],
+    loadComponent: () =>
+      import('./features/pharmacy-profile/pharmacy-profile').then((m) => m.PharmacyProfilePage),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

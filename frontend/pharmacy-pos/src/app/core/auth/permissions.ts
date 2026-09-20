@@ -9,6 +9,9 @@ export const PERMISSIONS = {
   platformAuditRead: 'platform.audit.read',
   tenantMembersManage: 'tenant.members.manage',
   tenantRolesManage: 'tenant.roles.manage',
+  tenantMedicinesRead: 'tenant.medicines.read',
+  tenantMedicinesManage: 'tenant.medicines.manage',
+  tenantPharmacyManage: 'tenant.pharmacy.manage',
 } as const;
 
 /** Permission catalog shown on the Roles page (mirrors the server catalog). */
@@ -43,5 +46,20 @@ export const PERMISSION_CATALOG: readonly PermissionDescriptor[] = [
     code: PERMISSIONS.tenantRolesManage,
     module: 'tenant',
     description: "Manage the tenant's roles and their permissions.",
+  },
+  {
+    code: PERMISSIONS.tenantMedicinesRead,
+    module: 'tenant',
+    description: 'Search and view the medicine catalog.',
+  },
+  {
+    code: PERMISSIONS.tenantMedicinesManage,
+    module: 'tenant',
+    description: 'Manage medicines, categories and manufacturers.',
+  },
+  {
+    code: PERMISSIONS.tenantPharmacyManage,
+    module: 'tenant',
+    description: 'Manage the pharmacy profile.',
   },
 ];

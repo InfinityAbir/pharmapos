@@ -1,7 +1,9 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
+import { PERMISSIONS } from '../../core/auth/permissions';
 import { KeycloakService } from '../../core/auth/keycloak.service';
+import { CatalogApi, CatalogSummary } from '../../core/http/catalog-api.service';
 import { PlatformApi, PlatformInfo } from '../../core/http/platform-api.service';
 import { SessionService } from '../../core/session/session.service';
 
@@ -13,11 +15,13 @@ import { SessionService } from '../../core/session/session.service';
 })
 export class Dashboard implements OnInit {
   private readonly api = inject(PlatformApi);
+  private readonly catalog = inject(CatalogApi);
   private readonly keycloak = inject(KeycloakService);
   protected readonly session = inject(SessionService);
 
   protected readonly isAuthenticated = this.keycloak.isAuthenticated;
   protected readonly info = signal<PlatformInfo | undefined>(undefined);
+  protected readonly summary = signal<CatalogSummary | undefined>(undefined);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | undefined>(undefined);
 
@@ -29,6 +33,10 @@ export class Dashboard implements OnInit {
     void this.keycloak.login();
   }
 
+  protected canReadCatalog(): boolean {
+    return this.session.hasPermission(PERMISSIONS.tenantMedicinesRead);
+  }
+
   private async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(undefined);
@@ -37,8 +45,13 @@ export class Dashboard implements OnInit {
       const info = await firstValueFrom(this.api.info());
       this.info.set(info);
 
-      if (this.keycloak.isAuthenticated() && !this.session.loaded()) {
-        await this.session.refresh();
+      if (this.keycloak.isAuthenticated()) {
+        if (!this.session.loaded()) {
+          await this.session.refresh();
+        }
+        if (this.canReadCatalog()) {
+          this.summary.set(await firstValueFrom(this.catalog.catalogSummary()));
+        }
       }
     } catch {
       this.error.set('The PharmaPOS API could not be reached.');

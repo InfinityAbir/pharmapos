@@ -5,9 +5,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PharmaPOS.Application.Common.Auditing;
 using PharmaPOS.Application.Common.Authorization;
+using PharmaPOS.Application.Common.Catalog;
 using PharmaPOS.Application.Common.Tenancy;
 using PharmaPOS.Application.Features.Auditing;
 using PharmaPOS.Infrastructure.Auditing;
+using PharmaPOS.Infrastructure.Catalog;
 using PharmaPOS.Infrastructure.Identity;
 using PharmaPOS.Infrastructure.Identity.Tenancy;
 using PharmaPOS.Infrastructure.Persistence;
@@ -52,6 +54,11 @@ public static class DependencyInjection
         services.AddScoped<IPlatformTenantStore, PlatformTenantStore>();
         services.AddScoped<ITenantRoleRepository, TenantRoleRepository>();
         services.AddScoped<ITenantMembershipRepository, TenantMembershipRepository>();
+
+        services.AddScoped<IMedicineRepository, MedicineRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IManufacturerRepository, ManufacturerRepository>();
+        services.AddScoped<IPharmacyProfileStore, PharmacyProfileStore>();
 
         services
             .AddOptions<DatabaseOptions>()

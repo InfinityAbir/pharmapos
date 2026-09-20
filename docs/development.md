@@ -111,6 +111,10 @@ Realm-level notes:
   access token by protocol mappers.
 - Passwords must satisfy the realm policy: at least 12 characters with upper, lower, digit and no
   username substring.
+- Transient E2E users created via the admin API only keep custom attributes (e.g. `tenant_id`)
+  when the realm's user-profile `unmanagedAttributePolicy` is `ENABLED` (live instances only;
+  realm imports bypass validation). Without it, attribute writes are silently stripped and the
+  token carries no `tenant_id` claim.
 
 ## 6. Troubleshooting
 

@@ -1,0 +1,232 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Catalog</p>
+    <h1>Medicines</h1>
+    <p class="lede">
+      The tenant's medicine catalog. Search matches brand, generic, barcode and manufacturer.
+      Writes are guarded by <code>tenant.medicines.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>tenant.medicines.read</code> permission.
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    <div class="panel">
+      <div class="fields fields--filters">
+        <label>
+          Search
+          <input
+            type="text"
+            name="search"
+            [(ngModel)]="search"
+            (ngModelChange)="onSearchInput()"
+            placeholder="Brand, generic, barcode, manufacturer…"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          Category
+          <select name="filterCategory" [(ngModel)]="filterCategory" (ngModelChange)="onFilterChange()">
+            <option value="">All categories</option>
+            @for (category of categories(); track category.id) {
+              <option [value]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Manufacturer
+          <select
+            name="filterManufacturer"
+            [(ngModel)]="filterManufacturer"
+            (ngModelChange)="onFilterChange()"
+          >
+            <option value="">All manufacturers</option>
+            @for (manufacturer of manufacturers(); track manufacturer.id) {
+              <option [value]="manufacturer.id">{{ manufacturer.name }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Status
+          <select name="filterActive" [(ngModel)]="filterActive" (ngModelChange)="onFilterChange()">
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+            <option value="all">All</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    @if (hasPermission(canManage)) {
+      <form class="panel" (ngSubmit)="save()">
+        <h2>{{ editingId() ? 'Edit medicine' : 'New medicine' }}</h2>
+        <div class="fields">
+          <label>
+            Brand name
+            <input type="text" name="brandName" [(ngModel)]="form.brandName" maxlength="160" autocomplete="off" />
+          </label>
+          <label>
+            Generic name
+            <input type="text" name="genericName" [(ngModel)]="form.genericName" maxlength="160" autocomplete="off" />
+          </label>
+          <label>
+            Strength
+            <input type="text" name="strength" [(ngModel)]="form.strength" placeholder="500mg" maxlength="64" autocomplete="off" />
+          </label>
+          <label>
+            Dosage form
+            <select name="dosageForm" [(ngModel)]="form.dosageForm">
+              @for (dosage of dosageForms; track dosage) {
+                <option [value]="dosage">{{ dosage }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Manufacturer
+            <select name="manufacturerId" [(ngModel)]="form.manufacturerId">
+              <option [ngValue]="null">—</option>
+              @for (manufacturer of manufacturers(); track manufacturer.id) {
+                <option [ngValue]="manufacturer.id">{{ manufacturer.name }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Category
+            <select name="categoryId" [(ngModel)]="form.categoryId">
+              <option [ngValue]="null">—</option>
+              @for (category of categories(); track category.id) {
+                <option [ngValue]="category.id">{{ category.name }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Barcode
+            <input type="text" name="barcode" [(ngModel)]="form.barcode" maxlength="64" autocomplete="off" />
+          </label>
+          <label>
+            Unit
+            <input type="text" name="unit" [(ngModel)]="form.unit" placeholder="strip" maxlength="32" autocomplete="off" />
+          </label>
+          <label>
+            Pack size
+            <input type="number" name="packSize" [(ngModel)]="form.packSize" min="1" />
+          </label>
+          <label>
+            Purchase price (BDT)
+            <input type="number" name="purchasePrice" [(ngModel)]="form.purchasePrice" min="0" step="0.01" />
+          </label>
+          <label>
+            Selling price (BDT)
+            <input type="number" name="sellingPrice" [(ngModel)]="form.sellingPrice" min="0" step="0.01" />
+          </label>
+          <label>
+            Reorder level
+            <input type="number" name="reorderLevel" [(ngModel)]="form.reorderLevel" min="0" step="1" />
+          </label>
+          <label>
+            VAT rate (%)
+            <input type="number" name="vatRate" [(ngModel)]="form.vatRate" min="0" max="100" step="0.01" />
+          </label>
+          <label class="check">
+            <input type="checkbox" name="requiresPrescription" [(ngModel)]="form.requiresPrescription" />
+            Prescription required
+          </label>
+        </div>
+        @if (formError(); as message) {
+          <p class="alert" role="alert">{{ message }}</p>
+        }
+        <div class="row">
+          <button type="submit" class="button" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Create medicine' }}
+          </button>
+          @if (editingId()) {
+            <button type="button" class="button button--ghost" (click)="startCreate()">Cancel</button>
+          }
+        </div>
+      </form>
+    }
+
+    @if (medicines().length === 0) {
+      <p class="muted">No medicines match this search.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Medicine</th>
+              <th scope="col">Form</th>
+              <th scope="col">Barcode</th>
+              <th scope="col">Price</th>
+              <th scope="col">Status</th>
+              @if (hasPermission(canManage)) {
+                <th scope="col"><span class="sr-only">Actions</span></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (medicine of medicines(); track medicine.id) {
+              <tr>
+                <td>
+                  <strong>{{ medicine.brandName }} {{ medicine.strength }}</strong>
+                  <div class="muted small">{{ medicine.genericName }}</div>
+                  <div class="muted small">
+                    {{ medicine.manufacturerName ?? '—' }} · {{ medicine.categoryName ?? '—' }}
+                    @if (medicine.requiresPrescription) {
+                      · <span class="pill">Rx</span>
+                    }
+                  </div>
+                </td>
+                <td>{{ medicine.dosageForm }} · {{ medicine.unit }}</td>
+                <td>
+                  @if (medicine.barcode) {
+                    <code>{{ medicine.barcode }}</code>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                <td class="nowrap">৳{{ medicine.sellingPrice }}</td>
+                <td>
+                  <span class="pill" [class.pill--warn]="!medicine.isActive">
+                    {{ medicine.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                @if (hasPermission(canManage)) {
+                  <td class="actions">
+                    <button type="button" class="button button--small" (click)="startEdit(medicine)">
+                      Edit
+                    </button>
+                    @if (medicine.isActive) {
+                      <button
+                        type="button"
+                        class="button button--small"
+                        (click)="setStatus(medicine, false)"
+                      >
+                        Deactivate
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="button button--small"
+                        (click)="setStatus(medicine, true)"
+                      >
+                        Activate
+                      </button>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

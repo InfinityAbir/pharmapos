@@ -22,6 +22,9 @@ public static class Permissions
     {
         public const string MembersManage = "tenant.members.manage";
         public const string RolesManage = "tenant.roles.manage";
+        public const string MedicinesRead = "tenant.medicines.read";
+        public const string MedicinesManage = "tenant.medicines.manage";
+        public const string PharmacyManage = "tenant.pharmacy.manage";
     }
 
     /// <summary>Complete catalog, used for seeding and for validating role definitions.</summary>
@@ -32,6 +35,9 @@ public static class Permissions
         new(Permissions.Platform.AuditRead, "platform", "Read the audit log."),
         new(Permissions.Tenant.MembersManage, "tenant", "Manage the tenant's users and their roles."),
         new(Permissions.Tenant.RolesManage, "tenant", "Manage the tenant's roles and their permissions."),
+        new(Permissions.Tenant.MedicinesRead, "tenant", "Search and view the medicine catalog."),
+        new(Permissions.Tenant.MedicinesManage, "tenant", "Manage medicines, categories and manufacturers."),
+        new(Permissions.Tenant.PharmacyManage, "tenant", "Manage the pharmacy profile."),
     ];
 
     /// <summary>Whether a permission code exists in the catalog.</summary>

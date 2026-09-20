@@ -1,0 +1,164 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Tenant</p>
+    <h1>Pharmacy profile</h1>
+    <p class="lede">
+      Shop settings used on receipts and invoices. Changes are guarded by
+      <code>tenant.pharmacy.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>tenant.medicines.read</code> permission.
+    </p>
+  } @else {
+    @if (notConfigured()) {
+      <p class="notice" role="status">
+        No pharmacy profile has been configured for this tenant yet.
+        @if (!hasPermission(canManage)) {
+          Ask a manager to configure it.
+        }
+      </p>
+    }
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+    @if (saved()) {
+      <p class="notice notice--ok" role="status">Profile saved.</p>
+    }
+
+    <form class="panel" (ngSubmit)="save()">
+      <div class="fields">
+        <label class="wide">
+          Pharmacy name
+          <input
+            type="text"
+            name="pharmacyName"
+            [(ngModel)]="profile.pharmacyName"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="160"
+            autocomplete="off"
+          />
+        </label>
+        <label class="wide">
+          Address
+          <input
+            type="text"
+            name="address"
+            [(ngModel)]="profile.address"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="512"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          Phone
+          <input
+            type="text"
+            name="phone"
+            [(ngModel)]="profile.phone"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="64"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          Email
+          <input
+            type="email"
+            name="email"
+            [(ngModel)]="profile.email"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="320"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          Website
+          <input
+            type="text"
+            name="website"
+            [(ngModel)]="profile.website"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="256"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          Registration info
+          <input
+            type="text"
+            name="registrationInfo"
+            [(ngModel)]="profile.registrationInfo"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="256"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          VAT info
+          <input
+            type="text"
+            name="vatInfo"
+            [(ngModel)]="profile.vatInfo"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="256"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          Currency
+          <input
+            type="text"
+            name="currency"
+            [(ngModel)]="profile.currency"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="8"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          Default language
+          <input
+            type="text"
+            name="defaultLanguage"
+            [(ngModel)]="profile.defaultLanguage"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="8"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          Timezone
+          <input
+            type="text"
+            name="timezone"
+            [(ngModel)]="profile.timezone"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="64"
+            autocomplete="off"
+          />
+        </label>
+        <label class="wide">
+          Invoice footer
+          <input
+            type="text"
+            name="invoiceFooter"
+            [(ngModel)]="profile.invoiceFooter"
+            [disabled]="!hasPermission(canManage)"
+            maxlength="512"
+            autocomplete="off"
+          />
+        </label>
+      </div>
+      @if (hasPermission(canManage)) {
+        <button type="submit" class="button" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save profile' }}
+        </button>
+      }
+    </form>
+  }
+</section>

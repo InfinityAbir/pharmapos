@@ -69,6 +69,17 @@
       }
     </article>
 
+    @if (canReadCatalog() && summary(); as catalog) {
+      <article class="card">
+        <h2>Catalog</h2>
+        <dl class="facts">
+          <div><dt>Medicines</dt><dd>{{ catalog.medicineCount }} ({{ catalog.activeMedicineCount }} active)</dd></div>
+          <div><dt>Categories</dt><dd>{{ catalog.categoryCount }}</dd></div>
+          <div><dt>Manufacturers</dt><dd>{{ catalog.manufacturerCount }}</dd></div>
+        </dl>
+      </article>
+    }
+
     <article class="card">
       <h2>Roles</h2>
       @if (session.context()?.roles?.length) {
