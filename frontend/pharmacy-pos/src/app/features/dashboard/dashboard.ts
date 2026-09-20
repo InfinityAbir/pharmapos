@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { PERMISSIONS } from '../../core/auth/permissions';
 import { KeycloakService } from '../../core/auth/keycloak.service';
 import { CatalogApi, CatalogSummary } from '../../core/http/catalog-api.service';
+import { AlertsSummary, InventoryApi } from '../../core/http/inventory-api.service';
 import { PlatformApi, PlatformInfo } from '../../core/http/platform-api.service';
 import { SessionService } from '../../core/session/session.service';
 
@@ -16,12 +17,14 @@ import { SessionService } from '../../core/session/session.service';
 export class Dashboard implements OnInit {
   private readonly api = inject(PlatformApi);
   private readonly catalog = inject(CatalogApi);
+  private readonly inventory = inject(InventoryApi);
   private readonly keycloak = inject(KeycloakService);
   protected readonly session = inject(SessionService);
 
   protected readonly isAuthenticated = this.keycloak.isAuthenticated;
   protected readonly info = signal<PlatformInfo | undefined>(undefined);
   protected readonly summary = signal<CatalogSummary | undefined>(undefined);
+  protected readonly alerts = signal<AlertsSummary | undefined>(undefined);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | undefined>(undefined);
 
@@ -35,6 +38,10 @@ export class Dashboard implements OnInit {
 
   protected canReadCatalog(): boolean {
     return this.session.hasPermission(PERMISSIONS.tenantMedicinesRead);
+  }
+
+  protected canReadInventory(): boolean {
+    return this.session.hasPermission(PERMISSIONS.tenantInventoryRead);
   }
 
   private async load(): Promise<void> {
@@ -51,6 +58,9 @@ export class Dashboard implements OnInit {
         }
         if (this.canReadCatalog()) {
           this.summary.set(await firstValueFrom(this.catalog.catalogSummary()));
+        }
+        if (this.canReadInventory()) {
+          this.alerts.set(await firstValueFrom(this.inventory.alertsSummary()));
         }
       }
     } catch {

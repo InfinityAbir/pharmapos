@@ -55,5 +55,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/pharmacy-profile/pharmacy-profile').then((m) => m.PharmacyProfilePage),
   },
+  {
+    path: 'inventory',
+    title: 'Inventory · PharmaPOS',
+    canActivate: [permissionGuard(PERMISSIONS.tenantInventoryRead)],
+    loadComponent: () => import('./features/inventory/inventory').then((m) => m.InventoryPage),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

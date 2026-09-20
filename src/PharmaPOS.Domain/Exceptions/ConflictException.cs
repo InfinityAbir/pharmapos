@@ -7,4 +7,9 @@ public sealed class ConflictException : DomainException
         : base(code, message, ErrorCategory.Conflict)
     {
     }
+
+    public ConflictException(string code, string message, Exception? innerException)
+        : base(code, message, ErrorCategory.Conflict, innerException)
+    {
+    }
 }

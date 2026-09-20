@@ -40,6 +40,9 @@ public sealed class MedicineConfiguration : IEntityTypeConfiguration<Medicine>
             .HasPrincipalKey(category => new { category.Id, category.TenantId })
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Composite alternate key used by tenant-composite FKs (batches, movements).
+        builder.HasAlternateKey(medicine => new { medicine.Id, medicine.TenantId });
+
         // Barcode unique per tenant when present (PostgreSQL allows multiple NULLs).
         builder.HasIndex(medicine => new { medicine.TenantId, medicine.Barcode }).IsUnique();
 

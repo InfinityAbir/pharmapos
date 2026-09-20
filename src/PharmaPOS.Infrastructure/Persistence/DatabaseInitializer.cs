@@ -7,6 +7,7 @@ using PharmaPOS.Application.Common.Authorization;
 using PharmaPOS.Application.Features.Tenancy;
 using PharmaPOS.Domain.Catalog;
 using PharmaPOS.Domain.Identity;
+using PharmaPOS.Domain.Inventory;
 using PharmaPOS.Infrastructure.Identity.Tenancy;
 
 namespace PharmaPOS.Infrastructure.Persistence;
@@ -73,8 +74,9 @@ public static class DatabaseInitializer
         await SeedPermissionsAsync(db, cancellationToken);
         await SeedDemoIdentityAsync(db, cancellationToken);
         await SeedDemoCatalogAsync(db, cancellationToken);
+        await SeedDemoStockAsync(db, cancellationToken);
 
-        logger.LogInformation("Seeded demo identity and catalog data for tenant {TenantId}.", DemoTenantId);
+        logger.LogInformation("Seeded demo identity, catalog and stock data for tenant {TenantId}.", DemoTenantId);
     }
 
     private static async Task SeedPermissionsAsync(AppDbContext db, CancellationToken cancellationToken)
@@ -113,22 +115,27 @@ public static class DatabaseInitializer
             [Permissions.Platform.TenantsManage, Permissions.Platform.UsersManage,
              Permissions.Platform.AuditRead, Permissions.Tenant.MembersManage,
              Permissions.Tenant.RolesManage, Permissions.Tenant.MedicinesRead,
-             Permissions.Tenant.MedicinesManage, Permissions.Tenant.PharmacyManage],
+             Permissions.Tenant.MedicinesManage, Permissions.Tenant.PharmacyManage,
+             Permissions.Tenant.InventoryRead, Permissions.Tenant.InventoryManage],
             cancellationToken);
 
         var ownerRole = await EnsureRoleAsync(
             db, "Owner", "Pharmacy owner: audit visibility and tenant administration.", isSystem: true,
             [Permissions.Platform.AuditRead, Permissions.Tenant.MembersManage,
              Permissions.Tenant.RolesManage, Permissions.Tenant.MedicinesRead,
-             Permissions.Tenant.MedicinesManage, Permissions.Tenant.PharmacyManage],
+             Permissions.Tenant.MedicinesManage, Permissions.Tenant.PharmacyManage,
+             Permissions.Tenant.InventoryRead, Permissions.Tenant.InventoryManage],
             cancellationToken);
 
-        await EnsureRoleAsync(db, "Manager", "Shift supervision and catalog lookup.",
-            isSystem: true, [Permissions.Tenant.MedicinesRead], cancellationToken);
+        await EnsureRoleAsync(db, "Manager", "Shift supervision, catalog and stock lookup.",
+            isSystem: true, [Permissions.Tenant.MedicinesRead, Permissions.Tenant.InventoryRead],
+            cancellationToken);
         await EnsureRoleAsync(db, "Cashier", "Checkout operation (permissions arrive with the POS phase).",
             isSystem: true, [], cancellationToken);
-        await EnsureRoleAsync(db, "Inventory Staff", "Stock handling (permissions arrive with the inventory phase).",
-            isSystem: true, [], cancellationToken);
+        await EnsureRoleAsync(db, "Inventory Staff", "Stock receiving, adjustments and expiry handling.",
+            isSystem: true, [Permissions.Tenant.MedicinesRead, Permissions.Tenant.InventoryRead,
+                             Permissions.Tenant.InventoryManage],
+            cancellationToken);
 
         await EnsureMembershipAsync(db, admin, platformAdmin, isDefault: true, cancellationToken);
         await EnsureMembershipAsync(db, owner, ownerRole, isDefault: true, cancellationToken);
@@ -419,6 +426,173 @@ public static class DatabaseInitializer
             VatRate = vatRate,
             RequiresPrescription = requiresPrescription,
             IsActive = true,
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task SeedDemoStockAsync(AppDbContext db, CancellationToken cancellationToken)
+    {
+        var tenantId = TenantScope.CurrentTenantId(db);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+
+        // Opening stock. Deliberately includes a near-expiry batch (Seclo SC-001), a low-stock
+        // medicine (Amlocard: 10 on hand vs reorder 30) and a depleted expired batch (Fimoxyl
+        // FM-000) so the alert lists have real demo content.
+        await EnsureBatchAsync(db, tenantId, barcode: "8941154100017", batchNumber: "NP-001",
+            quantity: 120, purchasePrice: 8.00m, sellingPrice: 12.00m,
+            manufactureDate: new DateOnly(2026, 1, 10), expiryDate: new DateOnly(2027, 6, 30),
+            supplierName: "Square Distributor", purchaseReference: "PO-2026-001", cancellationToken);
+        await EnsureBatchAsync(db, tenantId, barcode: "8941154100024", batchNumber: "NE-001",
+            quantity: 60, purchasePrice: 12.00m, sellingPrice: 18.00m,
+            manufactureDate: new DateOnly(2026, 3, 5), expiryDate: new DateOnly(2028, 1, 31),
+            supplierName: "Square Distributor", purchaseReference: "PO-2026-001", cancellationToken);
+        await EnsureBatchAsync(db, tenantId, barcode: "8941154100031", batchNumber: "FM-001",
+            quantity: 40, purchasePrice: 45.00m, sellingPrice: 60.00m,
+            manufactureDate: new DateOnly(2026, 2, 1), expiryDate: new DateOnly(2027, 9, 30),
+            supplierName: "Square Distributor", purchaseReference: "PO-2026-002", cancellationToken);
+        await EnsureBatchAsync(db, tenantId, barcode: "8941154100048", batchNumber: "SC-002",
+            quantity: 45, purchasePrice: 28.00m, sellingPrice: 40.00m,
+            manufactureDate: new DateOnly(2026, 4, 12), expiryDate: new DateOnly(2027, 11, 30),
+            supplierName: "Square Distributor", purchaseReference: "PO-2026-002", cancellationToken);
+        await EnsureBatchAsync(db, tenantId, barcode: "8941154100048", batchNumber: "SC-001",
+            quantity: 12, purchasePrice: 28.00m, sellingPrice: 40.00m,
+            manufactureDate: new DateOnly(2025, 10, 1), expiryDate: today.AddDays(18),
+            supplierName: "Square Distributor", purchaseReference: "PO-2025-114", cancellationToken);
+        await EnsureBatchAsync(db, tenantId, barcode: "8941154200014", batchNumber: "AM-001",
+            quantity: 10, purchasePrice: 22.00m, sellingPrice: 32.00m,
+            manufactureDate: new DateOnly(2026, 5, 20), expiryDate: new DateOnly(2027, 5, 31),
+            supplierName: "Beximco Depot", purchaseReference: "PO-2026-003", cancellationToken);
+        await EnsureBatchAsync(db, tenantId, barcode: "8941154300011", batchNumber: "NR-001",
+            quantity: 25, purchasePrice: 35.00m, sellingPrice: 50.00m,
+            manufactureDate: new DateOnly(2026, 6, 15), expiryDate: new DateOnly(2027, 4, 30),
+            supplierName: "Incepta Depot", purchaseReference: "PO-2026-004", cancellationToken);
+
+        await EnsureExpiredBatchAsync(db, tenantId, barcode: "8941154100031", batchNumber: "FM-000",
+            removedQuantity: 8, purchasePrice: 45.00m, sellingPrice: 60.00m,
+            manufactureDate: new DateOnly(2024, 6, 1), expiryDate: today.AddDays(-90),
+            supplierName: "Square Distributor", purchaseReference: "PO-2024-088", cancellationToken);
+    }
+
+    private static async Task EnsureBatchAsync(
+        AppDbContext db,
+        string tenantId,
+        string barcode,
+        string batchNumber,
+        int quantity,
+        decimal purchasePrice,
+        decimal sellingPrice,
+        DateOnly? manufactureDate,
+        DateOnly expiryDate,
+        string? supplierName,
+        string? purchaseReference,
+        CancellationToken cancellationToken)
+    {
+        var medicine = await db.Medicines
+            .FirstOrDefaultAsync(candidate => candidate.Barcode == barcode, cancellationToken);
+
+        if (medicine is null)
+        {
+            return;
+        }
+
+        var exists = await db.MedicineBatches.AnyAsync(
+            candidate => candidate.MedicineId == medicine.Id && candidate.BatchNumber == batchNumber,
+            cancellationToken);
+
+        if (exists)
+        {
+            return;
+        }
+
+        var batch = new MedicineBatch
+        {
+            TenantId = tenantId,
+            MedicineId = medicine.Id,
+            BatchNumber = batchNumber,
+            PurchasePrice = purchasePrice,
+            SellingPrice = sellingPrice,
+            Quantity = quantity,
+            ManufactureDate = manufactureDate,
+            ExpiryDate = expiryDate,
+            SupplierName = supplierName,
+            PurchaseReference = purchaseReference,
+        };
+
+        db.MedicineBatches.Add(batch);
+        db.InventoryMovements.Add(new InventoryMovement
+        {
+            TenantId = tenantId,
+            MedicineId = medicine.Id,
+            BatchId = batch.Id,
+            Type = MovementTypes.OpeningStock,
+            QuantityChange = quantity,
+            QuantityAfter = quantity,
+            Reason = purchaseReference,
+            ActorSubject = null,
+            OccurredAtUtc = DateTimeOffset.UtcNow,
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task EnsureExpiredBatchAsync(
+        AppDbContext db,
+        string tenantId,
+        string barcode,
+        string batchNumber,
+        int removedQuantity,
+        decimal purchasePrice,
+        decimal sellingPrice,
+        DateOnly? manufactureDate,
+        DateOnly expiryDate,
+        string? supplierName,
+        string? purchaseReference,
+        CancellationToken cancellationToken)
+    {
+        var medicine = await db.Medicines
+            .FirstOrDefaultAsync(candidate => candidate.Barcode == barcode, cancellationToken);
+
+        if (medicine is null)
+        {
+            return;
+        }
+
+        var exists = await db.MedicineBatches.AnyAsync(
+            candidate => candidate.MedicineId == medicine.Id && candidate.BatchNumber == batchNumber,
+            cancellationToken);
+
+        if (exists)
+        {
+            return;
+        }
+
+        var batch = new MedicineBatch
+        {
+            TenantId = tenantId,
+            MedicineId = medicine.Id,
+            BatchNumber = batchNumber,
+            PurchasePrice = purchasePrice,
+            SellingPrice = sellingPrice,
+            Quantity = 0,
+            ManufactureDate = manufactureDate,
+            ExpiryDate = expiryDate,
+            SupplierName = supplierName,
+            PurchaseReference = purchaseReference,
+        };
+
+        db.MedicineBatches.Add(batch);
+        db.InventoryMovements.Add(new InventoryMovement
+        {
+            TenantId = tenantId,
+            MedicineId = medicine.Id,
+            BatchId = batch.Id,
+            Type = MovementTypes.Expired,
+            QuantityChange = -removedQuantity,
+            QuantityAfter = 0,
+            Reason = null,
+            ActorSubject = null,
+            OccurredAtUtc = DateTimeOffset.UtcNow,
         });
 
         await db.SaveChangesAsync(cancellationToken);

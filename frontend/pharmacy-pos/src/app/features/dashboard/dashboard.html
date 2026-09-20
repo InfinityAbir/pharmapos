@@ -80,6 +80,17 @@
       </article>
     }
 
+    @if (canReadInventory() && alerts(); as stock) {
+      <article class="card">
+        <h2>Inventory alerts</h2>
+        <dl class="facts">
+          <div><dt>Low stock</dt><dd>{{ stock.lowStockCount }} medicines</dd></div>
+          <div><dt>Expiring ≤ 30 days</dt><dd>{{ stock.expiringWithin30DaysCount }} batches</dd></div>
+          <div><dt>Expired in stock</dt><dd>{{ stock.expiredBatchCount }} batches</dd></div>
+        </dl>
+      </article>
+    }
+
     <article class="card">
       <h2>Roles</h2>
       @if (session.context()?.roles?.length) {

@@ -30,6 +30,9 @@
         @if (session.hasPermission(canManageMedicines)) {
           <a routerLink="/catalog-data" routerLinkActive="is-active">Catalog data</a>
         }
+        @if (session.hasPermission(canReadInventory)) {
+          <a routerLink="/inventory" routerLinkActive="is-active">Inventory</a>
+        }
       }
     </nav>
 

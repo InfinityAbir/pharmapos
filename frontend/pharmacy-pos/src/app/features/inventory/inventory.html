@@ -1,0 +1,317 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Inventory</p>
+    <h1>Stock</h1>
+    <p class="lede">
+      Batch-level quantities with expiry, summed per medicine. Every change writes a ledger row.
+      Receipts, adjustments and expiry are guarded by
+      <code>tenant.inventory.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>tenant.inventory.read</code> permission.
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    @if (summary(); as alerts) {
+      <div class="cards">
+        <article class="stat" [class.stat--warn]="alerts.lowStockCount > 0">
+          <strong>{{ alerts.lowStockCount }}</strong>
+          <span>low-stock medicines</span>
+        </article>
+        <article class="stat" [class.stat--warn]="alerts.expiringWithin30DaysCount > 0">
+          <strong>{{ alerts.expiringWithin30DaysCount }}</strong>
+          <span>batches expiring ≤ 30 days</span>
+        </article>
+        <article class="stat" [class.stat--bad]="alerts.expiredBatchCount > 0">
+          <strong>{{ alerts.expiredBatchCount }}</strong>
+          <span>expired batches in stock</span>
+        </article>
+      </div>
+    }
+
+    <div class="panel">
+      <div class="fields fields--filters">
+        <label>
+          Search
+          <input
+            type="text"
+            name="search"
+            [(ngModel)]="search"
+            (ngModelChange)="onSearchInput()"
+            placeholder="Brand or generic…"
+            autocomplete="off"
+          />
+        </label>
+        <label class="check">
+          <input
+            type="checkbox"
+            name="lowStockOnly"
+            [(ngModel)]="lowStockOnly"
+            (ngModelChange)="onFilterChange()"
+          />
+          Low stock only
+        </label>
+      </div>
+    </div>
+
+    @if (stock().length === 0) {
+      <p class="muted">No medicines in stock view. Receive stock per batch below.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Medicine</th>
+              <th scope="col">On hand</th>
+              <th scope="col">Reorder at</th>
+              <th scope="col">Batches</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of stock(); track row.medicineId) {
+              <tr
+                [class.selected]="row.medicineId === selectedMedicineId"
+                (click)="selectMedicine(row.medicineId)"
+                tabindex="0"
+                (keydown.enter)="selectMedicine(row.medicineId)"
+              >
+                <td>
+                  <strong>{{ row.brandName }} {{ row.strength }}</strong>
+                  @if (row.isLowStock) {
+                    <span class="pill pill--warn">low stock</span>
+                  }
+                </td>
+                <td>
+                  <strong>{{ row.totalQuantity }}</strong>
+                </td>
+                <td>{{ row.reorderLevel }}</td>
+                <td>{{ row.batchCount }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (selectedMedicine(); as medicine) {
+      <section class="panel">
+        <h2>
+          {{ medicine.brandName }} {{ medicine.strength }} — {{ medicine.totalQuantity }} on hand
+        </h2>
+
+        @if (notice(); as message) {
+          <p class="notice" role="status">{{ message }}</p>
+        }
+
+        @if (hasPermission(canManage)) {
+          <form class="receive" (ngSubmit)="saveReceive()">
+            <h3>Receive stock</h3>
+            <div class="fields">
+              <label>
+                Batch number
+                <input
+                  type="text"
+                  name="batchNumber"
+                  [(ngModel)]="receive.batchNumber"
+                  maxlength="64"
+                  autocomplete="off"
+                />
+              </label>
+              <label>
+                Quantity
+                <input type="number" name="quantity" [(ngModel)]="receive.quantity" min="1" step="1" />
+              </label>
+              <label>
+                Purchase price (BDT)
+                <input
+                  type="number"
+                  name="purchasePrice"
+                  [(ngModel)]="receive.purchasePrice"
+                  min="0"
+                  step="0.01"
+                />
+              </label>
+              <label>
+                Selling price (BDT)
+                <input
+                  type="number"
+                  name="sellingPrice"
+                  [(ngModel)]="receive.sellingPrice"
+                  min="0"
+                  step="0.01"
+                />
+              </label>
+              <label>
+                Manufacture date
+                <input type="date" name="manufactureDate" [(ngModel)]="receive.manufactureDate" />
+              </label>
+              <label>
+                Expiry date
+                <input type="date" name="expiryDate" [(ngModel)]="receive.expiryDate" />
+              </label>
+              <label>
+                Supplier
+                <input
+                  type="text"
+                  name="supplierName"
+                  [(ngModel)]="receive.supplierName"
+                  maxlength="160"
+                  autocomplete="off"
+                />
+              </label>
+              <label>
+                Purchase reference
+                <input
+                  type="text"
+                  name="purchaseReference"
+                  [(ngModel)]="receive.purchaseReference"
+                  maxlength="64"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+            <button type="submit" class="button" [disabled]="saving()">
+              {{ saving() ? 'Receiving…' : 'Receive stock' }}
+            </button>
+          </form>
+        }
+
+        <h3>Batches</h3>
+        @if (batches().length === 0) {
+          <p class="muted">No batches recorded for this medicine yet.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Batch</th>
+                  <th scope="col">Qty</th>
+                  <th scope="col">Expiry</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">Supplier</th>
+                  @if (hasPermission(canManage)) {
+                    <th scope="col" aria-label="Actions"></th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (batch of batches(); track batch.id) {
+                  <tr>
+                    <td>
+                      <code>{{ batch.batchNumber }}</code>
+                      @if (batch.isExpired) {
+                        <span class="pill pill--bad">expired</span>
+                      }
+                    </td>
+                    <td>
+                      <strong>{{ batch.quantity }}</strong>
+                    </td>
+                    <td class="nowrap">{{ batch.expiryDate | date: 'mediumDate' }}</td>
+                    <td class="nowrap">৳{{ batch.sellingPrice }}</td>
+                    <td>{{ batch.supplierName ?? '—' }}</td>
+                    @if (hasPermission(canManage)) {
+                      <td class="actions">
+                        <button
+                          type="button"
+                          class="button button--small"
+                          (click)="startAdjust(batch)"
+                        >
+                          Adjust
+                        </button>
+                        @if (batch.quantity > 0) {
+                          <button
+                            type="button"
+                            class="button button--small"
+                            (click)="expire(batch)"
+                            [disabled]="saving()"
+                          >
+                            Expire
+                          </button>
+                        }
+                      </td>
+                    }
+                  </tr>
+                  @if (adjustingBatchId === batch.id && hasPermission(canManage)) {
+                    <tr class="adjust-row">
+                      <td colspan="6">
+                        <form class="inline" (ngSubmit)="saveAdjust(batch)">
+                          <label>
+                            Quantity change
+                            <input
+                              type="number"
+                              name="adjustQty"
+                              [(ngModel)]="adjustQty"
+                              step="1"
+                              placeholder="+5 / -3"
+                              aria-label="Quantity change"
+                            />
+                          </label>
+                          <label>
+                            Reason
+                            <input
+                              type="text"
+                              name="adjustReason"
+                              [(ngModel)]="adjustReason"
+                              maxlength="256"
+                              placeholder="Damaged, recount…"
+                              autocomplete="off"
+                              aria-label="Adjustment reason"
+                            />
+                          </label>
+                          <button type="submit" class="button button--small" [disabled]="saving()">
+                            {{ saving() ? 'Saving…' : 'Save' }}
+                          </button>
+                          <button
+                            type="button"
+                            class="button button--small button--ghost"
+                            (click)="cancelAdjust()"
+                          >
+                            Cancel
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <h3>Recent movements</h3>
+        @if (movements().length === 0) {
+          <p class="muted">No movements recorded for this medicine.</p>
+        } @else {
+          <ul class="moves">
+            @for (movement of movements(); track movement.id) {
+              <li>
+                <code>{{ movement.type }}</code>
+                <span class="delta" [class.delta--out]="movement.quantityChange < 0">
+                  {{ movement.quantityChange > 0 ? '+' : '' }}{{ movement.quantityChange }}
+                </span>
+                <span class="muted small">
+                  {{ movement.batchNumber }} · after: {{ movement.quantityAfter }}
+                  @if (movement.reason) {
+                    · {{ movement.reason }}
+                  }
+                  @if (movement.actorSubject) {
+                    · {{ movement.actorSubject }}
+                  }
+                  · {{ movement.occurredAtUtc | date: 'short' }}
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  }
+</section>

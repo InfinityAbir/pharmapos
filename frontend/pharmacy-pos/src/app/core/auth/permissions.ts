@@ -12,6 +12,8 @@ export const PERMISSIONS = {
   tenantMedicinesRead: 'tenant.medicines.read',
   tenantMedicinesManage: 'tenant.medicines.manage',
   tenantPharmacyManage: 'tenant.pharmacy.manage',
+  tenantInventoryRead: 'tenant.inventory.read',
+  tenantInventoryManage: 'tenant.inventory.manage',
 } as const;
 
 /** Permission catalog shown on the Roles page (mirrors the server catalog). */
@@ -61,5 +63,15 @@ export const PERMISSION_CATALOG: readonly PermissionDescriptor[] = [
     code: PERMISSIONS.tenantPharmacyManage,
     module: 'tenant',
     description: 'Manage the pharmacy profile.',
+  },
+  {
+    code: PERMISSIONS.tenantInventoryRead,
+    module: 'tenant',
+    description: 'View stock levels, batches and movements.',
+  },
+  {
+    code: PERMISSIONS.tenantInventoryManage,
+    module: 'tenant',
+    description: 'Receive, adjust and expire stock.',
   },
 ];
