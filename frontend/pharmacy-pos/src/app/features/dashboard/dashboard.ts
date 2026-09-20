@@ -7,7 +7,8 @@ import { CatalogApi, CatalogSummary } from '../../core/http/catalog-api.service'
 import { AlertsSummary, InventoryApi } from '../../core/http/inventory-api.service';
 import { PlatformApi, PlatformInfo } from '../../core/http/platform-api.service';
 import { PurchasingApi, PurchasingSummary } from '../../core/http/purchasing-api.service';
-import { SalesApi, TodaySales } from '../../core/http/sales-api.service';
+import { ProductPerformanceRow, ReportsApi } from '../../core/http/reports-api.service';
+import { Sale, SalesApi, TodaySales } from '../../core/http/sales-api.service';
 import { SessionService } from '../../core/session/session.service';
 
 @Component({
@@ -22,6 +23,7 @@ export class Dashboard implements OnInit {
   private readonly inventory = inject(InventoryApi);
   private readonly purchasing = inject(PurchasingApi);
   private readonly sales = inject(SalesApi);
+  private readonly reports = inject(ReportsApi);
   private readonly keycloak = inject(KeycloakService);
   protected readonly session = inject(SessionService);
 
@@ -31,6 +33,8 @@ export class Dashboard implements OnInit {
   protected readonly alerts = signal<AlertsSummary | undefined>(undefined);
   protected readonly purchasingSummary = signal<PurchasingSummary | undefined>(undefined);
   protected readonly todaySales = signal<TodaySales | undefined>(undefined);
+  protected readonly topSellers = signal<readonly ProductPerformanceRow[]>([]);
+  protected readonly recentSales = signal<readonly Sale[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | undefined>(undefined);
 
@@ -83,6 +87,8 @@ export class Dashboard implements OnInit {
         }
         if (this.canReadSales()) {
           this.todaySales.set(await firstValueFrom(this.sales.todaySales()));
+          this.topSellers.set(await firstValueFrom(this.reports.productPerformance(30, true, 5)));
+          this.recentSales.set(await firstValueFrom(this.sales.listSales()));
         }
       }
     } catch {

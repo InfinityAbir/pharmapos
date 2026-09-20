@@ -46,6 +46,13 @@
         @if (session.hasPermission(canReadCustomers)) {
           <a routerLink="/customers" routerLinkActive="is-active">Customers</a>
         }
+        @if (
+          session.hasPermission(canReadSales) ||
+          session.hasPermission(canReadInventory) ||
+          session.hasPermission(canReadPurchasing)
+        ) {
+          <a routerLink="/reports" routerLinkActive="is-active">Reports</a>
+        }
       }
     </nav>
 

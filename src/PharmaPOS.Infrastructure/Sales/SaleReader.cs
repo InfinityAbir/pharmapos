@@ -96,15 +96,17 @@ public sealed class SaleReader : ISaleReader
         var (today, start, endExclusive) =
             await TodayBoundsAsync(_timeProvider.GetUtcNow(), cancellationToken);
 
-        var sales = await _dbContext.Sales
+        // Dashboard metric: COUNT/SUM in PostgreSQL over the tenant-day slice.
+        // Only scalars leave the database, never the day's sales rows.
+        var inDay = _dbContext.Sales
             .AsNoTracking()
-            .Where(sale => sale.OccurredAtUtc >= start && sale.OccurredAtUtc < endExclusive)
-            .ToListAsync(cancellationToken);
+            .Where(sale => sale.OccurredAtUtc >= start && sale.OccurredAtUtc < endExclusive);
 
         return new TodaySalesDto(
             Date: today,
-            SaleCount: sales.Count,
-            TotalAmount: sales.Sum(sale => sale.TotalAmount));
+            SaleCount: await inDay.CountAsync(cancellationToken),
+            TotalAmount: await inDay.SumAsync(
+                sale => (decimal?)sale.TotalAmount, cancellationToken) ?? 0m);
     }
 
     private async Task<(DateOnly Date, DateTimeOffset Start, DateTimeOffset EndExclusive)>

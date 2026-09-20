@@ -775,6 +775,8 @@ namespace PharmaPOS.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId", "SupplierId");
 
+                    b.HasIndex("TenantId", "Status", "PurchaseDate");
+
                     b.ToTable("purchases", (string)null);
 
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
@@ -969,6 +971,8 @@ namespace PharmaPOS.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId", "CashierSubject");
+
                     b.HasIndex("TenantId", "CustomerId");
 
                     b.HasIndex("TenantId", "InvoiceNumber")
@@ -1099,6 +1103,8 @@ namespace PharmaPOS.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SaleId", "TenantId");
+
+                    b.HasIndex("TenantId", "Method");
 
                     b.HasIndex("TenantId", "SaleId");
 

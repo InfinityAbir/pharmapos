@@ -106,7 +106,19 @@ public sealed class StockReader : IStockReader
         var today = Today();
         var horizon = today.AddDays(30);
 
-        var lowStock = (await ListLowStockAsync(cancellationToken)).Count;
+        // Dashboard metric: the low-stock count evaluates as grouped batch sums against
+        // reorder levels in a single SQL statement (same semantics as ListLowStockAsync:
+        // every medicine, all of its batches). No catalog rows leave the database.
+        var lowStock = await _dbContext.Medicines
+            .AsNoTracking()
+            .Select(medicine => new
+            {
+                medicine.ReorderLevel,
+                Total = _dbContext.MedicineBatches
+                    .Where(batch => batch.MedicineId == medicine.Id)
+                    .Sum(batch => (int?)batch.Quantity) ?? 0,
+            })
+            .CountAsync(row => row.Total < row.ReorderLevel, cancellationToken);
 
         var expiring = await _dbContext.MedicineBatches.CountAsync(
             batch => batch.Quantity > 0

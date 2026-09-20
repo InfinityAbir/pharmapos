@@ -9,6 +9,7 @@ using PharmaPOS.Application.Common.Catalog;
 using PharmaPOS.Application.Common.Customers;
 using PharmaPOS.Application.Common.Inventory;
 using PharmaPOS.Application.Common.Purchasing;
+using PharmaPOS.Application.Common.Reporting;
 using PharmaPOS.Application.Common.Sales;
 using PharmaPOS.Application.Common.Tenancy;
 using PharmaPOS.Application.Features.Auditing;
@@ -21,6 +22,7 @@ using PharmaPOS.Infrastructure.Purchasing;
 using PharmaPOS.Infrastructure.Sales;
 using PharmaPOS.Infrastructure.Identity.Tenancy;
 using PharmaPOS.Infrastructure.Persistence;
+using PharmaPOS.Infrastructure.Reporting;
 
 namespace PharmaPOS.Infrastructure;
 
@@ -80,6 +82,7 @@ public static class DependencyInjection
         services.AddScoped<IReturnService, ReturnService>();
         services.AddScoped<IReturnReader, ReturnReader>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IReportReader, ReportReader>();
 
         services
             .AddOptions<DatabaseOptions>()

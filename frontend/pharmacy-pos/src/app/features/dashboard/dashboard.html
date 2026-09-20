@@ -107,7 +107,29 @@
         <h2>Today's sales</h2>
         <dl class="facts">
           <div><dt>Transactions</dt><dd>{{ today.saleCount }}</dd></div>
-          <div><dt>Total</dt><dd>৳{{ today.totalAmount }}</dd></div>
+          <div><dt>Revenue</dt><dd>৳{{ today.totalAmount }}</dd></div>
+        </dl>
+      </article>
+    }
+
+    @if (canReadSales() && topSellers().length > 0) {
+      <article class="card">
+        <h2>Top sellers (30 days)</h2>
+        <dl class="facts">
+          @for (row of topSellers(); track row.medicineId) {
+            <div><dt>{{ row.medicineName }}</dt><dd>{{ row.quantitySold }} · ৳{{ row.revenue }}</dd></div>
+          }
+        </dl>
+      </article>
+    }
+
+    @if (canReadSales() && recentSales().length > 0) {
+      <article class="card">
+        <h2>Recent sales</h2>
+        <dl class="facts">
+          @for (sale of recentSales().slice(0, 5); track sale.id) {
+            <div><dt>{{ sale.invoiceNumber }}</dt><dd>৳{{ sale.totalAmount }}</dd></div>
+          }
         </dl>
       </article>
     }

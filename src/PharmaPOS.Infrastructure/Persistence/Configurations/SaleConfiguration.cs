@@ -30,6 +30,9 @@ public sealed class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.HasIndex(sale => new { sale.TenantId, sale.InvoiceNumber }).IsUnique();
         builder.HasIndex(sale => new { sale.TenantId, sale.OccurredAtUtc });
 
+        // Reporting: sales grouped by cashier over a date range.
+        builder.HasIndex(sale => new { sale.TenantId, sale.CashierSubject });
+
         // Composite alternate key used by tenant-composite FKs (items, payments, idempotency).
         builder.HasAlternateKey(sale => new { sale.Id, sale.TenantId });
 

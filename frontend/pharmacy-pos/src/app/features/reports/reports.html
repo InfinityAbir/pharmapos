@@ -1,0 +1,284 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Insights</p>
+    <h1>Reports</h1>
+    <p class="lede">
+      Server-side aggregates only — every figure below was grouped and summed in PostgreSQL
+      over your tenant's data. The browser renders results; it never downloads raw ledgers.
+    </p>
+  </header>
+
+  <div class="panel">
+    <div class="fields fields--filters">
+      <label>
+        From
+        <input type="date" name="from" [(ngModel)]="from" (ngModelChange)="onFilterChange()" />
+      </label>
+      <label>
+        To
+        <input type="date" name="to" [(ngModel)]="to" (ngModelChange)="onFilterChange()" />
+      </label>
+      <label>
+        Trend bucket
+        <select name="bucket" [(ngModel)]="bucket" (ngModelChange)="onFilterChange()">
+          <option value="day">Daily</option>
+          <option value="week">Weekly</option>
+          <option value="month">Monthly</option>
+        </select>
+      </label>
+      <label>
+        Movers window (days)
+        <input
+          type="number"
+          name="windowDays"
+          [(ngModel)]="windowDays"
+          (ngModelChange)="onFilterChange()"
+          min="1"
+          max="365"
+          step="1"
+        />
+      </label>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Loading reports…</p>
+  } @else if (!hasAnyReportPermission()) {
+    <p class="notice" role="status">
+      Your account has none of the report permissions
+      (<code>tenant.sales.read</code>, <code>tenant.inventory.read</code>,
+      <code>tenant.purchasing.read</code>).
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    @if (canReadSales()) {
+      <section class="panel">
+        <h2>Sales trend ({{ bucket }})</h2>
+        @if (trend().length === 0) {
+          <p class="muted">No sales in this period yet.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">Period</th><th scope="col">Sales</th><th scope="col">Total</th></tr>
+              </thead>
+              <tbody>
+                @for (row of trend(); track row.periodStart) {
+                  <tr><td>{{ row.periodStart }}</td><td>{{ row.saleCount }}</td><td class="nowrap">৳{{ row.totalAmount }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button type="button" class="button button--small" (click)="exportCsv('sales-trend', ['periodStart', 'saleCount', 'totalAmount'], [...trend()])">Export CSV</button>
+          </div>
+        }
+      </section>
+
+      <section class="panel">
+        <h2>Sales by cashier</h2>
+        @if (byCashier().length === 0) {
+          <p class="muted">No sales in this period yet.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">Cashier</th><th scope="col">Sales</th><th scope="col">Total</th></tr>
+              </thead>
+              <tbody>
+                @for (row of byCashier(); track row.cashier) {
+                  <tr><td>{{ row.cashier }}</td><td>{{ row.saleCount }}</td><td class="nowrap">৳{{ row.totalAmount }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button type="button" class="button button--small" (click)="exportCsv('sales-by-cashier', ['cashier', 'saleCount', 'totalAmount'], [...byCashier()])">Export CSV</button>
+          </div>
+        }
+      </section>
+
+      <section class="panel">
+        <h2>Sales by payment method</h2>
+        @if (byMethod().length === 0) {
+          <p class="muted">No payments in this period yet.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">Method</th><th scope="col">Payments</th><th scope="col">Total</th></tr>
+              </thead>
+              <tbody>
+                @for (row of byMethod(); track row.method) {
+                  <tr><td>{{ row.method }}</td><td>{{ row.paymentCount }}</td><td class="nowrap">৳{{ row.totalAmount }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button type="button" class="button button--small" (click)="exportCsv('sales-by-method', ['method', 'paymentCount', 'totalAmount'], [...byMethod()])">Export CSV</button>
+          </div>
+        }
+      </section>
+
+      <section class="panel">
+        <h2>Sales by medicine</h2>
+        @if (byMedicine().length === 0) {
+          <p class="muted">No medicine sales in this period yet.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">Medicine</th><th scope="col">Qty</th><th scope="col">Revenue</th></tr>
+              </thead>
+              <tbody>
+                @for (row of byMedicine(); track row.medicineId) {
+                  <tr><td>{{ row.medicineName }}</td><td>{{ row.quantitySold }}</td><td class="nowrap">৳{{ row.revenue }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button type="button" class="button button--small" (click)="exportCsv('sales-by-medicine', ['medicineName', 'quantitySold', 'revenue'], [...byMedicine()])">Export CSV</button>
+          </div>
+        }
+      </section>
+
+      <section class="panel">
+        <h2>Best sellers</h2>
+        @if (bestSellers().length === 0) {
+          <p class="muted">No sales in the window yet.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">Medicine</th><th scope="col">Qty</th><th scope="col">Revenue</th></tr>
+              </thead>
+              <tbody>
+                @for (row of bestSellers(); track row.medicineId) {
+                  <tr><td>{{ row.medicineName }}</td><td>{{ row.quantitySold }}</td><td class="nowrap">৳{{ row.revenue }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="panel">
+        <h2>Slow movers (incl. zero-sale medicines)</h2>
+        @if (slowMovers().length === 0) {
+          <p class="muted">Every active medicine sold recently.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">Medicine</th><th scope="col">Qty</th><th scope="col">Revenue</th></tr>
+              </thead>
+              <tbody>
+                @for (row of slowMovers(); track row.medicineId) {
+                  <tr><td>{{ row.medicineName }}</td><td>{{ row.quantitySold }}</td><td class="nowrap">৳{{ row.revenue }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+
+    @if (canReadInventory()) {
+      <section class="panel">
+        <h2>Stock valuation</h2>
+        @if (valuation(); as value) {
+          <dl class="facts">
+            <div><dt>Medicines stocked</dt><dd>{{ value.medicineCount }}</dd></div>
+            <div><dt>Total units</dt><dd>{{ value.totalUnits }}</dd></div>
+            <div><dt>Purchase value</dt><dd><strong>৳{{ value.purchaseValue }}</strong></dd></div>
+            <div><dt>Selling value</dt><dd><strong>৳{{ value.sellingValue }}</strong></dd></div>
+          </dl>
+          @if (value.rows.length === 0) {
+            <p class="muted">No stocked batches.</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th scope="col">Medicine</th><th scope="col">Units</th><th scope="col">Purchase</th><th scope="col">Selling</th></tr>
+                </thead>
+                <tbody>
+                  @for (row of value.rows; track row.medicineId) {
+                    <tr><td>{{ row.medicineName }}</td><td>{{ row.totalQuantity }}</td><td class="nowrap">৳{{ row.purchaseValue }}</td><td class="nowrap">৳{{ row.sellingValue }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="row">
+              <button type="button" class="button button--small" (click)="exportCsv('stock-valuation', ['medicineName', 'totalQuantity', 'purchaseValue', 'sellingValue'], [...value.rows])">Export CSV</button>
+            </div>
+          }
+        }
+      </section>
+
+      <section class="panel">
+        <h2>Low stock</h2>
+        @if (lowStock().length === 0) {
+          <p class="muted">Nothing below reorder level.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">Medicine</th><th scope="col">On hand</th><th scope="col">Reorder at</th><th scope="col">Short by</th></tr>
+              </thead>
+              <tbody>
+                @for (row of lowStock(); track row.medicineId) {
+                  <tr><td>{{ row.medicineName }}</td><td>{{ row.totalQuantity }}</td><td>{{ row.reorderLevel }}</td><td>{{ row.deficit }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button type="button" class="button button--small" (click)="exportCsv('low-stock', ['medicineName', 'totalQuantity', 'reorderLevel', 'deficit'], [...lowStock()])">Export CSV</button>
+          </div>
+        }
+      </section>
+    }
+
+    @if (canReadPurchasing()) {
+      <section class="panel">
+        <h2>Purchase totals</h2>
+        @if (purchaseTotals(); as totals) {
+          <dl class="facts">
+            <div><dt>Received ({{ totals.from }} → {{ totals.to }})</dt><dd>{{ totals.receivedCount }} · <strong>৳{{ totals.receivedTotal }}</strong></dd></div>
+            <div><dt>Open drafts</dt><dd>{{ totals.draftCount }}</dd></div>
+          </dl>
+        } @else {
+          <p class="muted">No purchase data yet.</p>
+        }
+      </section>
+
+      <section class="panel">
+        <h2>Purchases by supplier</h2>
+        @if (bySupplier().length === 0) {
+          <p class="muted">No received purchases in this period yet.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">Supplier</th><th scope="col">Purchases</th><th scope="col">Total</th></tr>
+              </thead>
+              <tbody>
+                @for (row of bySupplier(); track row.supplierId) {
+                  <tr><td>{{ row.supplierName }}</td><td>{{ row.purchaseCount }}</td><td class="nowrap">৳{{ row.totalAmount }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button type="button" class="button button--small" (click)="exportCsv('purchases-by-supplier', ['supplierName', 'purchaseCount', 'totalAmount'], [...bySupplier()])">Export CSV</button>
+          </div>
+        }
+      </section>
+    }
+  }
+</section>

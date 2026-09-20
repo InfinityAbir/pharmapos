@@ -34,6 +34,9 @@ public sealed class PurchaseConfiguration : IEntityTypeConfiguration<Purchase>
         builder.HasIndex(purchase => new { purchase.TenantId, purchase.Status });
         builder.HasIndex(purchase => new { purchase.TenantId, purchase.PurchaseDate });
 
+        // Reporting: received purchases in a date range (totals + by-supplier).
+        builder.HasIndex(purchase => new { purchase.TenantId, purchase.Status, purchase.PurchaseDate });
+
         // Composite alternate key used by tenant-composite FKs (items, idempotency keys).
         builder.HasAlternateKey(purchase => new { purchase.Id, purchase.TenantId });
     }

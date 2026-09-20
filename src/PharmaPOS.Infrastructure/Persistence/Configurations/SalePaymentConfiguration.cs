@@ -25,5 +25,8 @@ public sealed class SalePaymentConfiguration : IEntityTypeConfiguration<SalePaym
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(payment => new { payment.TenantId, payment.SaleId });
+
+        // Reporting: payments grouped by method (joined to sales for the date range).
+        builder.HasIndex(payment => new { payment.TenantId, payment.Method });
     }
 }
