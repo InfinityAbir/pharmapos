@@ -7,12 +7,14 @@ using PharmaPOS.Application.Common.Auditing;
 using PharmaPOS.Application.Common.Authorization;
 using PharmaPOS.Application.Common.Catalog;
 using PharmaPOS.Application.Common.Inventory;
+using PharmaPOS.Application.Common.Purchasing;
 using PharmaPOS.Application.Common.Tenancy;
 using PharmaPOS.Application.Features.Auditing;
 using PharmaPOS.Infrastructure.Auditing;
 using PharmaPOS.Infrastructure.Catalog;
 using PharmaPOS.Infrastructure.Identity;
 using PharmaPOS.Infrastructure.Inventory;
+using PharmaPOS.Infrastructure.Purchasing;
 using PharmaPOS.Infrastructure.Identity.Tenancy;
 using PharmaPOS.Infrastructure.Persistence;
 
@@ -65,6 +67,9 @@ public static class DependencyInjection
         services.AddScoped<IBatchRepository, BatchRepository>();
         services.AddScoped<IStockReader, StockReader>();
         services.AddScoped<IMovementReader, MovementReader>();
+
+        services.AddScoped<ISupplierRepository, SupplierRepository>();
+        services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 
         services
             .AddOptions<DatabaseOptions>()

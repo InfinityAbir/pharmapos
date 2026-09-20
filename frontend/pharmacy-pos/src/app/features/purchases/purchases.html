@@ -1,0 +1,313 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Purchasing</p>
+    <h1>Purchases</h1>
+    <p class="lede">
+      Drafts become stock only when received — atomically and idempotently. Writes are guarded
+      by <code>tenant.purchasing.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>tenant.purchasing.read</code> permission.
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+    @if (notice(); as message) {
+      <p class="notice" role="status">{{ message }}</p>
+    }
+
+    @if (view === 'list') {
+      <div class="panel">
+        <div class="fields fields--filters">
+          <label>
+            Supplier
+            <select name="filterSupplier" [(ngModel)]="filterSupplier" (ngModelChange)="onFilterChange()">
+              <option value="">All suppliers</option>
+              @for (supplier of suppliers(); track supplier.id) {
+                <option [value]="supplier.id">{{ supplier.name }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Status
+            <select name="filterStatus" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
+              <option value="">All statuses</option>
+              <option value="Draft">Draft</option>
+              <option value="Received">Received</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </label>
+          @if (hasPermission(canManage)) {
+            <button type="button" class="button" (click)="startCreate()">New purchase</button>
+          }
+        </div>
+      </div>
+
+      @if (purchases().length === 0) {
+        <p class="muted">No purchases found.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Supplier</th>
+                <th scope="col">Lines</th>
+                <th scope="col">Total</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (purchase of purchases(); track purchase.id) {
+                <tr (click)="showDetail(purchase)" tabindex="0" (keydown.enter)="showDetail(purchase)">
+                  <td class="nowrap">{{ purchase.purchaseDate | date: 'mediumDate' }}</td>
+                  <td>
+                    <strong>{{ purchase.supplierName }}</strong>
+                    @if (purchase.supplierInvoiceNumber) {
+                      <div class="muted small">{{ purchase.supplierInvoiceNumber }}</div>
+                    }
+                  </td>
+                  <td>{{ purchase.items.length }}</td>
+                  <td class="nowrap">৳{{ purchase.totalAmount }}</td>
+                  <td>
+                    <span
+                      class="pill"
+                      [class.pill--warn]="purchase.status === 'Draft'"
+                      [class.pill--bad]="purchase.status === 'Cancelled'"
+                    >
+                      {{ purchase.status }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+
+    @if (view === 'form' && hasPermission(canManage)) {
+      <form class="panel" (ngSubmit)="saveDraft()">
+        <h2>{{ editingId ? 'Edit draft' : 'New purchase draft' }}</h2>
+        <div class="fields">
+          <label>
+            Supplier
+            <select name="formSupplierId" [(ngModel)]="formSupplierId">
+              <option value="">—</option>
+              @for (supplier of suppliers(); track supplier.id) {
+                <option [value]="supplier.id">{{ supplier.name }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Purchase date
+            <input type="date" name="formDate" [(ngModel)]="formDate" />
+          </label>
+          <label>
+            Supplier invoice no.
+            <input
+              type="text"
+              name="formInvoice"
+              [(ngModel)]="formInvoice"
+              maxlength="64"
+              autocomplete="off"
+            />
+          </label>
+          <label>
+            Discount (BDT)
+            <input type="number" name="formDiscount" [(ngModel)]="formDiscount" min="0" step="0.01" />
+          </label>
+          <label>
+            Tax (BDT)
+            <input type="number" name="formTax" [(ngModel)]="formTax" min="0" step="0.01" />
+          </label>
+          <label>
+            Notes
+            <input
+              type="text"
+              name="formNotes"
+              [(ngModel)]="formNotes"
+              maxlength="512"
+              autocomplete="off"
+            />
+          </label>
+        </div>
+
+        <h3>Lines</h3>
+        @if (medicinesUnavailable()) {
+          <p class="notice" role="status">
+            The medicine list could not be loaded. Lines cannot be added right now.
+          </p>
+        }
+        @for (row of rows; track $index; let i = $index) {
+          <div class="line">
+            <label>
+              Medicine
+              <select [(ngModel)]="row.medicineId" [name]="'medicine' + i">
+                <option value="">—</option>
+                @for (medicine of medicines(); track medicine.id) {
+                  <option [value]="medicine.id">
+                    {{ medicine.brandName }} {{ medicine.strength }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label>
+              Batch
+              <input
+                type="text"
+                [(ngModel)]="row.batchNumber"
+                [name]="'batch' + i"
+                maxlength="64"
+                autocomplete="off"
+              />
+            </label>
+            <label>
+              Expiry
+              <input type="date" [(ngModel)]="row.expiryDate" [name]="'expiry' + i" />
+            </label>
+            <label>
+              Qty
+              <input type="number" [(ngModel)]="row.quantity" [name]="'qty' + i" min="1" step="1" />
+            </label>
+            <label>
+              Unit price
+              <input
+                type="number"
+                [(ngModel)]="row.unitPrice"
+                [name]="'price' + i"
+                min="0"
+                step="0.01"
+              />
+            </label>
+            <label>
+              Discount
+              <input
+                type="number"
+                [(ngModel)]="row.discountAmount"
+                [name]="'discount' + i"
+                min="0"
+                step="0.01"
+              />
+            </label>
+            <button
+              type="button"
+              class="button button--small button--ghost"
+              (click)="removeRow(i)"
+              [disabled]="rows.length <= 1"
+              aria-label="Remove line"
+            >
+              ✕
+            </button>
+          </div>
+        }
+        <div class="row">
+          <button
+            type="button"
+            class="button button--small button--ghost"
+            (click)="addRow()"
+            [disabled]="medicinesUnavailable()"
+          >
+            + Add line
+          </button>
+          <span class="total">Estimated total: ৳{{ formTotal() }}</span>
+        </div>
+
+        <div class="row">
+          <button type="submit" class="button" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : editingId ? 'Save changes' : 'Create draft' }}
+          </button>
+          <button type="button" class="button button--ghost" (click)="backToList()">Cancel</button>
+        </div>
+      </form>
+    }
+
+    @if (view === 'detail' && detail; as purchase) {
+      <section class="panel">
+        <h2>
+          {{ purchase.supplierName }} · {{ purchase.purchaseDate | date: 'mediumDate' }}
+          <span
+            class="pill"
+            [class.pill--warn]="purchase.status === 'Draft'"
+            [class.pill--bad]="purchase.status === 'Cancelled'"
+          >
+            {{ purchase.status }}
+          </span>
+        </h2>
+        <dl class="facts">
+          @if (purchase.supplierInvoiceNumber) {
+            <div><dt>Invoice no.</dt><dd>{{ purchase.supplierInvoiceNumber }}</dd></div>
+          }
+          <div><dt>Subtotal</dt><dd>৳{{ purchase.subtotal }}</dd></div>
+          <div><dt>Discount</dt><dd>৳{{ purchase.discountAmount }}</dd></div>
+          <div><dt>Tax</dt><dd>৳{{ purchase.taxAmount }}</dd></div>
+          <div>
+            <dt>Total</dt>
+            <dd><strong>৳{{ purchase.totalAmount }}</strong></dd>
+          </div>
+          @if (purchase.notes) {
+            <div><dt>Notes</dt><dd>{{ purchase.notes }}</dd></div>
+          }
+        </dl>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Medicine</th>
+                <th scope="col">Batch</th>
+                <th scope="col">Expiry</th>
+                <th scope="col">Qty</th>
+                <th scope="col">Unit price</th>
+                <th scope="col">Line total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of purchase.items; track item.id) {
+                <tr>
+                  <td>{{ item.medicineName }}</td>
+                  <td><code>{{ item.batchNumber }}</code></td>
+                  <td class="nowrap">{{ item.expiryDate | date: 'mediumDate' }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td class="nowrap">৳{{ item.unitPrice }}</td>
+                  <td class="nowrap">৳{{ item.lineTotal }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="row">
+          <button type="button" class="button button--ghost" (click)="backToList()">Back</button>
+          @if (purchase.status === 'Draft' && hasPermission(canManage)) {
+            <button type="button" class="button button--ghost" (click)="startEdit(purchase)">
+              Edit
+            </button>
+            <button
+              type="button"
+              class="button"
+              (click)="receive(purchase)"
+              [disabled]="saving()"
+            >
+              {{ saving() ? 'Receiving…' : 'Receive stock' }}
+            </button>
+            <button
+              type="button"
+              class="button button--danger"
+              (click)="cancel(purchase)"
+              [disabled]="saving()"
+            >
+              Cancel purchase
+            </button>
+          }
+        </div>
+      </section>
+    }
+  }
+</section>

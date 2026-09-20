@@ -33,6 +33,10 @@
         @if (session.hasPermission(canReadInventory)) {
           <a routerLink="/inventory" routerLinkActive="is-active">Inventory</a>
         }
+        @if (session.hasPermission(canReadPurchasing)) {
+          <a routerLink="/suppliers" routerLinkActive="is-active">Suppliers</a>
+          <a routerLink="/purchases" routerLinkActive="is-active">Purchases</a>
+        }
       }
     </nav>
 

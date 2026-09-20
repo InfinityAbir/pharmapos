@@ -27,6 +27,8 @@ public static class Permissions
         public const string PharmacyManage = "tenant.pharmacy.manage";
         public const string InventoryRead = "tenant.inventory.read";
         public const string InventoryManage = "tenant.inventory.manage";
+        public const string PurchasingRead = "tenant.purchasing.read";
+        public const string PurchasingManage = "tenant.purchasing.manage";
     }
 
     /// <summary>Complete catalog, used for seeding and for validating role definitions.</summary>
@@ -42,6 +44,8 @@ public static class Permissions
         new(Permissions.Tenant.PharmacyManage, "tenant", "Manage the pharmacy profile."),
         new(Permissions.Tenant.InventoryRead, "tenant", "View stock levels, batches and movements."),
         new(Permissions.Tenant.InventoryManage, "tenant", "Receive, adjust and expire stock."),
+        new(Permissions.Tenant.PurchasingRead, "tenant", "View suppliers and purchases."),
+        new(Permissions.Tenant.PurchasingManage, "tenant", "Manage suppliers and purchases."),
     ];
 
     /// <summary>Whether a permission code exists in the catalog.</summary>

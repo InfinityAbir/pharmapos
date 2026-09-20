@@ -6,6 +6,7 @@ using PharmaPOS.Domain.Auditing;
 using PharmaPOS.Domain.Catalog;
 using PharmaPOS.Domain.Identity;
 using PharmaPOS.Domain.Inventory;
+using PharmaPOS.Domain.Purchasing;
 
 namespace PharmaPOS.Infrastructure.Persistence;
 
@@ -43,6 +44,10 @@ public sealed class AppDbContext : MultiTenantDbContext
     public DbSet<PharmacyProfile> PharmacyProfiles => Set<PharmacyProfile>();
     public DbSet<MedicineBatch> MedicineBatches => Set<MedicineBatch>();
     public DbSet<InventoryMovement> InventoryMovements => Set<InventoryMovement>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<Purchase> Purchases => Set<Purchase>();
+    public DbSet<PurchaseItem> PurchaseItems => Set<PurchaseItem>();
+    public DbSet<IdempotencyKey> IdempotencyKeys => Set<IdempotencyKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,5 +66,9 @@ public sealed class AppDbContext : MultiTenantDbContext
         modelBuilder.Entity<PharmacyProfile>().IsMultiTenant();
         modelBuilder.Entity<MedicineBatch>().IsMultiTenant();
         modelBuilder.Entity<InventoryMovement>().IsMultiTenant();
+        modelBuilder.Entity<Supplier>().IsMultiTenant();
+        modelBuilder.Entity<Purchase>().IsMultiTenant();
+        modelBuilder.Entity<PurchaseItem>().IsMultiTenant();
+        modelBuilder.Entity<IdempotencyKey>().IsMultiTenant();
     }
 }

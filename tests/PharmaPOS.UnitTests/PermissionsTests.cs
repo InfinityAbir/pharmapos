@@ -24,6 +24,8 @@ public sealed class PermissionsTests
         Permissions.Tenant.PharmacyManage.Should().Be("tenant.pharmacy.manage");
         Permissions.Tenant.InventoryRead.Should().Be("tenant.inventory.read");
         Permissions.Tenant.InventoryManage.Should().Be("tenant.inventory.manage");
+        Permissions.Tenant.PurchasingRead.Should().Be("tenant.purchasing.read");
+        Permissions.Tenant.PurchasingManage.Should().Be("tenant.purchasing.manage");
     }
 
     [Fact]
@@ -41,6 +43,8 @@ public sealed class PermissionsTests
             Permissions.Tenant.PharmacyManage,
             Permissions.Tenant.InventoryRead,
             Permissions.Tenant.InventoryManage,
+            Permissions.Tenant.PurchasingRead,
+            Permissions.Tenant.PurchasingManage,
         };
 
         Permissions.All.Select(descriptor => descriptor.Code)
@@ -62,6 +66,8 @@ public sealed class PermissionsTests
             Permissions.Tenant.PharmacyManage,
             Permissions.Tenant.InventoryRead,
             Permissions.Tenant.InventoryManage,
+            Permissions.Tenant.PurchasingRead,
+            Permissions.Tenant.PurchasingManage,
         };
 
         codes.Should().OnlyHaveUniqueItems();

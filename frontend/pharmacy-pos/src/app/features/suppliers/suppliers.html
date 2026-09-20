@@ -1,0 +1,163 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Purchasing</p>
+    <h1>Suppliers</h1>
+    <p class="lede">
+      The tenant's suppliers. Deletion is refused while purchases reference a supplier.
+      Writes are guarded by <code>tenant.purchasing.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>tenant.purchasing.read</code> permission.
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    <div class="panel">
+      <label>
+        Search
+        <input
+          type="text"
+          name="search"
+          [(ngModel)]="search"
+          (ngModelChange)="onSearchInput()"
+          placeholder="Name or company…"
+          autocomplete="off"
+        />
+      </label>
+    </div>
+
+    <form class="panel" (ngSubmit)="save()">
+      <h2>{{ editingId() ? 'Edit supplier' : 'New supplier' }}</h2>
+      <div class="fields">
+        <label>
+          Name
+          <input type="text" name="name" [(ngModel)]="form.name" maxlength="128" autocomplete="off" />
+        </label>
+        <label>
+          Company
+          <input type="text" name="company" [(ngModel)]="form.company" maxlength="160" autocomplete="off" />
+        </label>
+        <label>
+          Phone
+          <input type="text" name="phone" [(ngModel)]="form.phone" maxlength="64" autocomplete="off" />
+        </label>
+        <label>
+          Email
+          <input type="email" name="email" [(ngModel)]="form.email" maxlength="320" autocomplete="off" />
+        </label>
+        <label class="wide">
+          Address
+          <input type="text" name="address" [(ngModel)]="form.address" maxlength="512" autocomplete="off" />
+        </label>
+        <label>
+          Contact person
+          <input
+            type="text"
+            name="contactPerson"
+            [(ngModel)]="form.contactPerson"
+            maxlength="160"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          Payment terms
+          <input
+            type="text"
+            name="paymentTerms"
+            [(ngModel)]="form.paymentTerms"
+            placeholder="Net 30"
+            maxlength="256"
+            autocomplete="off"
+          />
+        </label>
+      </div>
+      @if (notice(); as message) {
+        <p class="notice" role="status">{{ message }}</p>
+      }
+      <div class="row">
+        <button type="submit" class="button" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Create supplier' }}
+        </button>
+        @if (editingId()) {
+          <button type="button" class="button button--ghost" (click)="startCreate()">Cancel</button>
+        }
+      </div>
+    </form>
+
+    @if (suppliers().length === 0) {
+      <p class="muted">No suppliers found.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Supplier</th>
+              <th scope="col">Contact</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (supplier of suppliers(); track supplier.id) {
+              <tr>
+                <td>
+                  <strong>{{ supplier.name }}</strong>
+                  @if (supplier.company) {
+                    <div class="muted small">{{ supplier.company }}</div>
+                  }
+                  @if (supplier.paymentTerms) {
+                    <div class="muted small">{{ supplier.paymentTerms }}</div>
+                  }
+                </td>
+                <td>
+                  {{ supplier.contactPerson ?? '—' }}
+                  <div class="muted small">{{ supplier.phone ?? '' }}</div>
+                  @if (supplier.email) {
+                    <div class="muted small">{{ supplier.email }}</div>
+                  }
+                </td>
+                <td>
+                  <span class="pill" [class.pill--warn]="!supplier.isActive">
+                    {{ supplier.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button type="button" class="button button--small" (click)="startEdit(supplier)">
+                    Edit
+                  </button>
+                  @if (supplier.isActive) {
+                    <button
+                      type="button"
+                      class="button button--small"
+                      (click)="setStatus(supplier, false)"
+                    >
+                      Deactivate
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="button button--small"
+                      (click)="setStatus(supplier, true)"
+                    >
+                      Activate
+                    </button>
+                  }
+                  <button type="button" class="button button--small button--danger" (click)="remove(supplier)">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

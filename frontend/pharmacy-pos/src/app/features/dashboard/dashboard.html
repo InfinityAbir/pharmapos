@@ -91,6 +91,17 @@
       </article>
     }
 
+    @if (canReadPurchasing() && purchasingSummary(); as buying) {
+      <article class="card">
+        <h2>Purchasing</h2>
+        <dl class="facts">
+          <div><dt>Open drafts</dt><dd>{{ buying.draftCount }}</dd></div>
+          <div><dt>Received this month</dt><dd>{{ buying.receivedThisMonthCount }}</dd></div>
+          <div><dt>Month total</dt><dd>৳{{ buying.receivedThisMonthTotal }}</dd></div>
+        </dl>
+      </article>
+    }
+
     <article class="card">
       <h2>Roles</h2>
       @if (session.context()?.roles?.length) {

@@ -83,75 +83,33 @@ public sealed class BatchRepository : IBatchRepository
                 $"Medicine '{input.MedicineId}' was not found.");
         }
 
-        var batchNumber = input.BatchNumber.Trim();
-        var batch = await _dbContext.MedicineBatches
-            .Include(candidate => candidate.Medicine)
-            .FirstOrDefaultAsync(
-                candidate => candidate.MedicineId == input.MedicineId
-                    && candidate.BatchNumber == batchNumber,
-                cancellationToken);
-
-        if (batch is null)
-        {
-            batch = new MedicineBatch
-            {
-                TenantId = TenantScope.CurrentTenantId(_dbContext),
-                MedicineId = medicine.Id,
-                Medicine = medicine,
-                BatchNumber = batchNumber,
-                PurchasePrice = input.PurchasePrice ?? medicine.PurchasePrice,
-                SellingPrice = input.SellingPrice ?? medicine.SellingPrice,
-                Quantity = 0,
-                ManufactureDate = input.ManufactureDate,
-                ExpiryDate = input.ExpiryDate,
-                SupplierName = Normalize(input.SupplierName),
-                PurchaseReference = Normalize(input.PurchaseReference),
-            };
-
-            _dbContext.MedicineBatches.Add(batch);
-        }
-        else
-        {
-            // Topping up an existing lot: dates must match (a mismatch signals the wrong
-            // batch number); prices follow the latest explicit values.
-            if ((input.ManufactureDate.HasValue && input.ManufactureDate != batch.ManufactureDate)
-                || input.ExpiryDate != batch.ExpiryDate)
-            {
-                throw new BusinessRuleException(
-                    "batch.date_mismatch",
-                    $"Batch '{batchNumber}' already exists with different dates. " +
-                    "Receive into a new batch number instead.");
-            }
-
-            if (input.PurchasePrice.HasValue)
-            {
-                batch.PurchasePrice = input.PurchasePrice.Value;
-            }
-
-            if (input.SellingPrice.HasValue)
-            {
-                batch.SellingPrice = input.SellingPrice.Value;
-            }
-        }
+        var batch = await StockIntake.ResolveForReceiveAsync(
+            _dbContext,
+            medicine,
+            input.BatchNumber,
+            input.PurchasePrice,
+            input.SellingPrice,
+            input.ManufactureDate,
+            input.ExpiryDate,
+            input.SupplierName,
+            input.PurchaseReference,
+            cancellationToken);
 
         batch.Quantity += input.Quantity;
 
-        _dbContext.InventoryMovements.Add(new InventoryMovement
-        {
-            TenantId = batch.TenantId,
-            MedicineId = medicine.Id,
-            BatchId = batch.Id,
-            Type = MovementTypes.PurchaseReceived,
-            QuantityChange = input.Quantity,
-            QuantityAfter = batch.Quantity,
-            Reason = Normalize(input.PurchaseReference) ?? Normalize(input.SupplierName),
-            ActorSubject = Actor(),
-            OccurredAtUtc = DateTimeOffset.UtcNow,
-        });
+        _dbContext.InventoryMovements.Add(StockIntake.BuildMovement(
+            batch.TenantId,
+            medicine.Id,
+            batch,
+            MovementTypes.PurchaseReceived,
+            input.Quantity,
+            batch.Quantity,
+            Normalize(input.PurchaseReference) ?? Normalize(input.SupplierName),
+            Actor()));
 
         await SaveAsync(cancellationToken);
 
-        return ToDto(batch, Today());
+        return (await FindAsync(batch.Id, cancellationToken))!;
     }
 
     public async Task<BatchDto> AdjustAsync(

@@ -6,6 +6,7 @@ import { KeycloakService } from '../../core/auth/keycloak.service';
 import { CatalogApi, CatalogSummary } from '../../core/http/catalog-api.service';
 import { AlertsSummary, InventoryApi } from '../../core/http/inventory-api.service';
 import { PlatformApi, PlatformInfo } from '../../core/http/platform-api.service';
+import { PurchasingApi, PurchasingSummary } from '../../core/http/purchasing-api.service';
 import { SessionService } from '../../core/session/session.service';
 
 @Component({
@@ -18,6 +19,7 @@ export class Dashboard implements OnInit {
   private readonly api = inject(PlatformApi);
   private readonly catalog = inject(CatalogApi);
   private readonly inventory = inject(InventoryApi);
+  private readonly purchasing = inject(PurchasingApi);
   private readonly keycloak = inject(KeycloakService);
   protected readonly session = inject(SessionService);
 
@@ -25,6 +27,7 @@ export class Dashboard implements OnInit {
   protected readonly info = signal<PlatformInfo | undefined>(undefined);
   protected readonly summary = signal<CatalogSummary | undefined>(undefined);
   protected readonly alerts = signal<AlertsSummary | undefined>(undefined);
+  protected readonly purchasingSummary = signal<PurchasingSummary | undefined>(undefined);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | undefined>(undefined);
 
@@ -44,6 +47,10 @@ export class Dashboard implements OnInit {
     return this.session.hasPermission(PERMISSIONS.tenantInventoryRead);
   }
 
+  protected canReadPurchasing(): boolean {
+    return this.session.hasPermission(PERMISSIONS.tenantPurchasingRead);
+  }
+
   private async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(undefined);
@@ -61,6 +68,11 @@ export class Dashboard implements OnInit {
         }
         if (this.canReadInventory()) {
           this.alerts.set(await firstValueFrom(this.inventory.alertsSummary()));
+        }
+        if (this.canReadPurchasing()) {
+          this.purchasingSummary.set(
+            await firstValueFrom(this.purchasing.purchasingSummary()),
+          );
         }
       }
     } catch {

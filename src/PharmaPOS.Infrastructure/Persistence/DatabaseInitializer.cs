@@ -1,14 +1,18 @@
 using Finbuckle.MultiTenant.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PharmaPOS.Application.Common.Authorization;
+using PharmaPOS.Application.Common.Purchasing;
 using PharmaPOS.Application.Features.Tenancy;
 using PharmaPOS.Domain.Catalog;
 using PharmaPOS.Domain.Identity;
 using PharmaPOS.Domain.Inventory;
+using PharmaPOS.Domain.Purchasing;
 using PharmaPOS.Infrastructure.Identity.Tenancy;
+using PharmaPOS.Infrastructure.Purchasing;
 
 namespace PharmaPOS.Infrastructure.Persistence;
 
@@ -75,8 +79,11 @@ public static class DatabaseInitializer
         await SeedDemoIdentityAsync(db, cancellationToken);
         await SeedDemoCatalogAsync(db, cancellationToken);
         await SeedDemoStockAsync(db, cancellationToken);
+        await SeedDemoPurchasingAsync(provider, db, cancellationToken);
 
-        logger.LogInformation("Seeded demo identity, catalog and stock data for tenant {TenantId}.", DemoTenantId);
+        logger.LogInformation(
+            "Seeded demo identity, catalog, stock and purchasing data for tenant {TenantId}.",
+            DemoTenantId);
     }
 
     private static async Task SeedPermissionsAsync(AppDbContext db, CancellationToken cancellationToken)
@@ -116,7 +123,8 @@ public static class DatabaseInitializer
              Permissions.Platform.AuditRead, Permissions.Tenant.MembersManage,
              Permissions.Tenant.RolesManage, Permissions.Tenant.MedicinesRead,
              Permissions.Tenant.MedicinesManage, Permissions.Tenant.PharmacyManage,
-             Permissions.Tenant.InventoryRead, Permissions.Tenant.InventoryManage],
+             Permissions.Tenant.InventoryRead, Permissions.Tenant.InventoryManage,
+             Permissions.Tenant.PurchasingRead, Permissions.Tenant.PurchasingManage],
             cancellationToken);
 
         var ownerRole = await EnsureRoleAsync(
@@ -124,11 +132,13 @@ public static class DatabaseInitializer
             [Permissions.Platform.AuditRead, Permissions.Tenant.MembersManage,
              Permissions.Tenant.RolesManage, Permissions.Tenant.MedicinesRead,
              Permissions.Tenant.MedicinesManage, Permissions.Tenant.PharmacyManage,
-             Permissions.Tenant.InventoryRead, Permissions.Tenant.InventoryManage],
+             Permissions.Tenant.InventoryRead, Permissions.Tenant.InventoryManage,
+             Permissions.Tenant.PurchasingRead, Permissions.Tenant.PurchasingManage],
             cancellationToken);
 
-        await EnsureRoleAsync(db, "Manager", "Shift supervision, catalog and stock lookup.",
-            isSystem: true, [Permissions.Tenant.MedicinesRead, Permissions.Tenant.InventoryRead],
+        await EnsureRoleAsync(db, "Manager", "Shift supervision, catalog, stock and purchase lookup.",
+            isSystem: true, [Permissions.Tenant.MedicinesRead, Permissions.Tenant.InventoryRead,
+                             Permissions.Tenant.PurchasingRead],
             cancellationToken);
         await EnsureRoleAsync(db, "Cashier", "Checkout operation (permissions arrive with the POS phase).",
             isSystem: true, [], cancellationToken);
@@ -596,6 +606,121 @@ public static class DatabaseInitializer
         });
 
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task SeedDemoPurchasingAsync(
+        IServiceProvider provider,
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        // Repositories are constructed over the tenant-bound seed context directly: the DI
+        // scope at startup has no HTTP tenant, so the injected AppDbContext would be unbound.
+        // Actor attribution is null here (no principal); deliveries are attributed on real use.
+        var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
+        var suppliers = new SupplierRepository(db);
+        var purchases = new PurchaseRepository(db, httpContextAccessor);
+
+        await EnsureSupplierAsync(db, "Square Distributor", "Square Pharmaceuticals Ltd.",
+            "+880-2-1111111", "sales@square-dist.local", "Dhaka, Bangladesh",
+            "Distribution Manager", "Net 30", cancellationToken);
+        await EnsureSupplierAsync(db, "Beximco Depot", "Beximco Pharmaceuticals Ltd.",
+            "+880-2-2222222", "sales@beximco-depot.local", "Dhaka, Bangladesh",
+            "Depot In-charge", "Net 15", cancellationToken);
+        await EnsureSupplierAsync(db, "Incepta Depot", "Incepta Pharmaceuticals Ltd.",
+            "+880-2-3333333", null, "Dhaka, Bangladesh",
+            null, "Cash on delivery", cancellationToken);
+
+        await EnsureDemoPurchaseAsync(db, suppliers, purchases, cancellationToken);
+    }
+
+    private static async Task EnsureSupplierAsync(
+        AppDbContext db,
+        string name,
+        string? company,
+        string? phone,
+        string? email,
+        string? address,
+        string? contactPerson,
+        string? paymentTerms,
+        CancellationToken cancellationToken)
+    {
+        var exists = await db.Suppliers
+            .AnyAsync(candidate => candidate.Name == name, cancellationToken);
+
+        if (exists)
+        {
+            return;
+        }
+
+        db.Suppliers.Add(new Supplier
+        {
+            TenantId = TenantScope.CurrentTenantId(db),
+            Name = name,
+            Company = company,
+            Phone = phone,
+            Email = email,
+            Address = address,
+            ContactPerson = contactPerson,
+            PaymentTerms = paymentTerms,
+            IsActive = true,
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task EnsureDemoPurchaseAsync(
+        AppDbContext db,
+        ISupplierRepository suppliers,
+        IPurchaseRepository purchases,
+        CancellationToken cancellationToken)
+    {
+        const string idempotencyKey = "seed-demo-po-001";
+
+        // Already seeded (replay check doubles as the existence check).
+        var existing = await db.Purchases
+            .AnyAsync(candidate => candidate.SupplierInvoiceNumber == "SQ-2026-005",
+                cancellationToken);
+
+        if (existing)
+        {
+            return;
+        }
+
+        var supplier = (await suppliers.ListAsync("Square Distributor", cancellationToken))
+            .FirstOrDefault(candidate => candidate.Name == "Square Distributor");
+
+        var napa = await db.Medicines
+            .FirstOrDefaultAsync(candidate => candidate.Barcode == "8941154100017",
+                cancellationToken);
+
+        if (supplier is null || napa is null)
+        {
+            return;
+        }
+
+        var draft = await purchases.CreateDraftAsync(
+            new PurchaseInput(
+                SupplierId: supplier.Id,
+                PurchaseDate: DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                SupplierInvoiceNumber: "SQ-2026-005",
+                DiscountAmount: 0,
+                TaxAmount: 0,
+                Notes: "Seeded demo purchase.",
+                Items:
+                [
+                    new PurchaseItemInput(
+                        MedicineId: napa.Id,
+                        BatchNumber: "NP-002",
+                        ManufactureDate: new DateOnly(2026, 7, 1),
+                        ExpiryDate: new DateOnly(2028, 6, 30),
+                        Quantity: 30,
+                        UnitPrice: 8.00m,
+                        DiscountAmount: 0,
+                        SellingPrice: null),
+                ]),
+            cancellationToken);
+
+        await purchases.ReceiveAsync(draft.Id, idempotencyKey, cancellationToken);
     }
 
     private static async Task EnsurePharmacyProfileAsync(
