@@ -301,15 +301,18 @@ public sealed class PurchaseRepository : IPurchaseRepository
             purchase => purchase.Status == PurchaseStatus.Draft,
             cancellationToken);
 
-        var receivedThisMonth = await _dbContext.Purchases
+        // Dashboard metric: COUNT/SUM in PostgreSQL over the month slice.
+        // Only scalars leave the database, never the month's purchase rows.
+        var received = _dbContext.Purchases
+            .AsNoTracking()
             .Where(purchase => purchase.Status == PurchaseStatus.Received
-                && purchase.PurchaseDate >= monthStart)
-            .ToListAsync(cancellationToken);
+                && purchase.PurchaseDate >= monthStart);
 
         return new PurchasingSummaryDto(
             DraftCount: drafts,
-            ReceivedThisMonthCount: receivedThisMonth.Count,
-            ReceivedThisMonthTotal: receivedThisMonth.Sum(purchase => purchase.TotalAmount));
+            ReceivedThisMonthCount: await received.CountAsync(cancellationToken),
+            ReceivedThisMonthTotal: await received.SumAsync(
+                purchase => (decimal?)purchase.TotalAmount, cancellationToken) ?? 0m);
     }
 
     private async Task<Supplier> RequireSupplierAsync(

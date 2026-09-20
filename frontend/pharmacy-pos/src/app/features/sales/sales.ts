@@ -12,6 +12,7 @@ import {
 import { describeApiError } from '../../core/i18n/error-message';
 import { LDatePipe, MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
 import { LanguageService } from '../../core/i18n/language.service';
+import { ConnectivityService } from '../../core/offline/connectivity.service';
 import { SessionService } from '../../core/session/session.service';
 import { ReceiptView } from './receipt';
 
@@ -33,6 +34,7 @@ export class SalesPage implements OnInit {
   private readonly returns = inject(ReturnsApi);
   private readonly session = inject(SessionService);
   protected readonly lang = inject(LanguageService);
+  private readonly connectivity = inject(ConnectivityService);
 
   protected readonly sales = signal<readonly Sale[]>([]);
   protected readonly receipt = signal<Receipt | undefined>(undefined);
@@ -129,6 +131,13 @@ export class SalesPage implements OnInit {
       return;
     }
     this.returnNotice.set(undefined);
+
+    // Returns need live stock truth (original batches, returnable quantities), so they
+    // stay online-only with an honest notice instead of a fake offline flow.
+    if (!(await this.connectivity.ensureOnline())) {
+      this.returnNotice.set(this.lang.t('offline.requiresConnection'));
+      return;
+    }
 
     const items = data.items
       .filter((item) => (this.returnQty[item.saleItemId] || 0) > 0)

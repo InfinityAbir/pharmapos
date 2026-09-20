@@ -24,6 +24,12 @@
       @if (error(); as message) {
         <p class="alert" role="alert">{{ message }}</p>
       }
+      @if (queuedNotice(); as message) {
+        <p class="notice" role="status">{{ message }}</p>
+      }
+      @if (!connectivity.online()) {
+        <p class="notice" role="status">{{ 'offline.banner' | t }}</p>
+      }
 
       <div class="pos">
         <section class="panel">
@@ -45,6 +51,9 @@
           } @else if (results().length === 0) {
             <p class="muted">{{ 'pos.noMedicines' | t }}</p>
           } @else {
+            @if (showingCached()) {
+              <p class="notice" role="status">{{ 'offline.cachedResults' | t }}</p>
+            }
             <ul class="results">
               @for (medicine of results(); track medicine.id) {
                 <li>
@@ -242,10 +251,12 @@
               type="button"
               class="button button--big"
               (click)="complete()"
-              [disabled]="completing() || cart.length === 0"
+              [disabled]="completing() || queue.isSyncing() || cart.length === 0"
             >
-              @if (completing()) {
-                {{ 'pos.completing' | t }}
+              @if (completing() || queue.isSyncing()) {
+                {{ queue.isSyncing() ? ('offline.syncing' | t) : ('pos.completing' | t) }}
+              } @else if (!connectivity.online()) {
+                {{ 'offline.queueSale' | t }}
               } @else {
                 {{ 'pos.completeSale' | t }} · {{ estimateTotal() | money }}
               }
@@ -253,6 +264,67 @@
           }
         </section>
       </div>
+
+      @if (queuedForTenant().length > 0 || foreignPending()) {
+        <section class="panel">
+          <h2>{{ 'offline.queuedTitle' | t }} ({{ queue.pendingCount() }})</h2>
+          @if (foreignPending()) {
+            <p class="notice" role="status">{{ 'offline.otherTenantSkipped' | t }}</p>
+          }
+          @if (queuedForTenant().length === 0) {
+            <p class="muted">{{ 'offline.noQueued' | t }}</p>
+          } @else {
+            <ul class="results">
+              @for (entry of queuedForTenant(); track entry.id) {
+                <li>
+                  <span>
+                    <strong>{{ entry.createdAt | ldatetime }}</strong>
+                    <span class="muted small">
+                      · {{ entry.status === 'confirmed' ? ('offline.synced' | t) : entry.status === 'failed' ? ('offline.failed' | t) : ('offline.pending' | t) }}
+                      @if (entry.invoiceNumber) {
+                        · {{ entry.invoiceNumber }}
+                      }
+                      @if (entry.status === 'failed') {
+                        · {{ describeQueued(entry) }}
+                      }
+                    </span>
+                  </span>
+                  <span class="nowrap">
+                    @if (entry.status === 'confirmed' && entry.saleId) {
+                      <button type="button" class="link" (click)="viewQueuedReceipt(entry)">
+                        {{ 'offline.viewReceipt' | t }}
+                      </button>
+                    }
+                    @if (entry.status === 'failed') {
+                      <button type="button" class="link" (click)="retryEntry(entry)">
+                        {{ 'offline.retry' | t }}
+                      </button>
+                    }
+                    @if (entry.status === 'confirmed' || entry.status === 'failed') {
+                      <button type="button" class="link link--danger" (click)="dismissEntry(entry)">
+                        {{ 'offline.dismiss' | t }}
+                      </button>
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+            <div class="row">
+              <button
+                type="button"
+                class="button button--small"
+                (click)="syncNow()"
+                [disabled]="queue.isSyncing() || !connectivity.online()"
+              >
+                {{ queue.isSyncing() ? ('offline.syncing' | t) : ('offline.syncNow' | t) }}
+              </button>
+              <button type="button" class="button button--small button--ghost" (click)="clearConfirmed()">
+                {{ 'offline.clearSynced' | t }}
+              </button>
+            </div>
+          }
+        </section>
+      }
     }
   </section>
 }

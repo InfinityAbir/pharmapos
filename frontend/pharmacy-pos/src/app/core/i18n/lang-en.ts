@@ -569,6 +569,25 @@ export const LANG_EN: Record<string, string> = {
   'reports.loadFailed': 'The reports could not be loaded.',
   'reports.permissionMissing': 'Your account is missing a permission required for one of these reports.',
 
+  // Offline-safe POS
+  'offline.banner': 'You are offline. New sales are queued on this device and sync on reconnect.',
+  'offline.cachedResults': 'Showing cached results — prices and stock are confirmed at sync.',
+  'offline.queueSale': 'Queue sale',
+  'offline.queuedDone': 'Sale queued. It will sync when the connection returns.',
+  'offline.queuedTitle': 'Queued sales',
+  'offline.noQueued': 'No queued sales.',
+  'offline.retry': 'Retry',
+  'offline.dismiss': 'Dismiss',
+  'offline.viewReceipt': 'View',
+  'offline.syncing': 'Syncing…',
+  'offline.syncNow': 'Sync now',
+  'offline.synced': 'Synced',
+  'offline.failed': 'Needs attention',
+  'offline.requiresConnection': 'This action needs a connection right now.',
+  'offline.otherTenantSkipped': 'Some queued sales belong to another tenant session and were skipped.',
+  'offline.pending': 'Waiting to sync',
+  'offline.clearSynced': 'Clear synced',
+
   // Generic API error fallbacks
   'errors.forbidden': 'You do not have permission to perform this action.',
   'errors.offline': 'The server could not be reached. Check your connection and retry.',

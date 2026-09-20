@@ -569,6 +569,25 @@ export const LANG_BN: Record<string, string> = {
   'reports.loadFailed': 'রিপোর্ট লোড করা যায়নি।',
   'reports.permissionMissing': 'এই রিপোর্টগুলোর একটির অনুমতি আপনার অ্যাকাউন্টে নেই।',
 
+  // Offline-safe POS
+  'offline.banner': 'আপনি অফলাইনে। নতুন বিক্রয় এই ডিভাইসে সারিবদ্ধ হবে ও সংযোগে সিঙ্ক হবে।',
+  'offline.cachedResults': 'ক্যাশ ফলাফল দেখানো হচ্ছে — দাম ও স্টক সিঙ্কে নিশ্চিত হয়।',
+  'offline.queueSale': 'বিক্রয় সারিবদ্ধ করুন',
+  'offline.queuedDone': 'বিক্রয় সারিবদ্ধ হয়েছে। সংযোগ ফিরলে সিঙ্ক হবে।',
+  'offline.queuedTitle': 'সারিবদ্ধ বিক্রয়',
+  'offline.noQueued': 'সারিবদ্ধ বিক্রয় নেই।',
+  'offline.retry': 'আবার চেষ্টা',
+  'offline.dismiss': 'সরান',
+  'offline.viewReceipt': 'দেখুন',
+  'offline.syncing': 'সিঙ্ক হচ্ছে…',
+  'offline.syncNow': 'এখনই সিঙ্ক',
+  'offline.synced': 'সিঙ্ক হয়েছে',
+  'offline.failed': 'মনোযোগ দরকার',
+  'offline.requiresConnection': 'এই কাজে এখন সংযোগ দরকার।',
+  'offline.otherTenantSkipped': 'কিছু সারিবদ্ধ বিক্রয় অন্য টেন্যান্ট সেশনের, এড়ানো হয়েছে।',
+  'offline.pending': 'সিঙ্কের অপেক্ষায়',
+  'offline.clearSynced': 'সিঙ্ক হওয়া মুছুন',
+
   // Generic API error fallbacks
   'errors.forbidden': 'এই কাজের অনুমতি আপনার নেই।',
   'errors.offline': 'সার্ভারে পৌঁছানো যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।',

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -6,14 +6,19 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 import { CatalogApi, Medicine } from '../../core/http/catalog-api.service';
 import { Batch, InventoryApi } from '../../core/http/inventory-api.service';
 import {
+  CheckoutInput,
   CheckoutPaymentInput,
   PAYMENT_METHODS,
   Receipt,
+  Sale,
   SalesApi,
 } from '../../core/http/sales-api.service';
 import { Customer, CustomersApi } from '../../core/http/customers-api.service';
+import { CatalogCacheService } from '../../core/offline/catalog-cache.service';
+import { ConnectivityService } from '../../core/offline/connectivity.service';
+import { OfflineQueueService, QueuedCheckout } from '../../core/offline/offline-queue.service';
 import { describeApiError } from '../../core/i18n/error-message';
-import { MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LDateTimePipe, MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
 import { LanguageService } from '../../core/i18n/language.service';
 import { SessionService } from '../../core/session/session.service';
 import { ReceiptView } from '../sales/receipt';
@@ -48,7 +53,7 @@ function newIdempotencyKey(): string {
 
 @Component({
   selector: 'app-pos',
-  imports: [FormsModule, ReceiptView, TranslatePipe, MoneyPipe],
+  imports: [FormsModule, ReceiptView, TranslatePipe, MoneyPipe, LDateTimePipe],
   templateUrl: './pos.html',
   styleUrl: './pos.css',
 })
@@ -59,6 +64,9 @@ export class PosPage implements OnInit, OnDestroy {
   private readonly customers = inject(CustomersApi);
   protected readonly session = inject(SessionService);
   protected readonly lang = inject(LanguageService);
+  protected readonly connectivity = inject(ConnectivityService);
+  protected readonly queue = inject(OfflineQueueService);
+  private readonly catalogCache = inject(CatalogCacheService);
 
   protected readonly canManage = PERMISSIONS.tenantSalesManage;
   protected readonly paymentMethods = PAYMENT_METHODS;
@@ -82,8 +90,21 @@ export class PosPage implements OnInit, OnDestroy {
   protected prescriptionReference = '';
   protected receipt: Receipt | undefined;
   protected cartKey = newIdempotencyKey();
+  protected readonly queuedNotice = signal<string | undefined>(undefined);
+  protected readonly showingCached = signal(false);
+  protected readonly foreignPending = signal(false);
   private debounce: ReturnType<typeof setTimeout> | undefined;
   private customerDebounce: ReturnType<typeof setTimeout> | undefined;
+
+  constructor() {
+    // Reconnect (or reload with pending work) replays this tenant's queue. The sweep is a
+    // no-op when nothing is pending and never touches the active cart.
+    effect(() => {
+      if (this.connectivity.online()) {
+        void this.autoSync();
+      }
+    });
+  }
 
   ngOnInit(): void {
     void this.initialSearch();
@@ -269,21 +290,139 @@ export class PosPage implements OnInit, OnDestroy {
 
   protected async complete(): Promise<void> {
     this.error.set(undefined);
+    this.queuedNotice.set(undefined);
 
     if (this.cart.length === 0) {
       this.error.set(this.lang.t('pos.cartEmptyError'));
       return;
     }
 
+    const payments = this.readPayments();
+    if (!payments) {
+      return;
+    }
+
+    const input: CheckoutInput = {
+      items: this.cart.map((line) => ({
+        medicineId: line.medicineId,
+        quantity: line.quantity,
+        batchId: line.batchId || null,
+        discountAmount: line.discount || 0,
+      })),
+      payments,
+      discountAmount: this.headerDiscount || 0,
+      customerId: this.selectedCustomer()?.id ?? null,
+      customerName: this.customerName.trim() || null,
+      customerPhone: this.customerPhone.trim() || null,
+      prescriptionReference: this.prescriptionReference.trim() || null,
+      idempotencyKey: this.cartKey,
+    };
+
+    if (await this.connectivity.ensureOnline()) {
+      await this.checkoutOnline(input);
+      return;
+    }
+
+    // Offline: capture the intent (with its idempotency key) and clear the cart for the
+    // next customer. Sync replays it; the server dedupes retries and revalidates stock.
+    const tenantId = this.session.context()?.tenantIdentifier;
+    if (!tenantId) {
+      this.error.set(this.lang.t('pos.checkoutFailed'));
+      return;
+    }
+    this.queue.enqueue(tenantId, input);
+    this.queuedNotice.set(this.lang.t('offline.queuedDone'));
+    this.newSale();
+  }
+
+  /** Queued intents for the current tenant session (newest last). */
+  protected queuedForTenant(): readonly QueuedCheckout[] {
+    const tenantId = this.session.context()?.tenantIdentifier;
+    if (!tenantId) {
+      return [];
+    }
+    return this.queue.items().filter((entry) => entry.tenantId === tenantId);
+  }
+
+  protected async syncNow(): Promise<void> {
+    this.queuedNotice.set(undefined);
+    await this.autoSync(true);
+  }
+
+  protected retryEntry(entry: QueuedCheckout): void {
+    this.queue.markRetrying(entry.id);
+    void this.autoSync(true);
+  }
+
+  protected dismissEntry(entry: QueuedCheckout): void {
+    this.queue.remove(entry.id);
+  }
+
+  protected clearConfirmed(): void {
+    this.queue.clearConfirmed();
+  }
+
+  protected async viewQueuedReceipt(entry: QueuedCheckout): Promise<void> {
+    if (!entry.saleId) {
+      return;
+    }
+    this.error.set(undefined);
+    if (!(await this.connectivity.ensureOnline())) {
+      this.error.set(this.lang.t('offline.requiresConnection'));
+      return;
+    }
+    try {
+      this.receipt = await firstValueFrom(this.sales.getReceipt(entry.saleId));
+    } catch (error) {
+      this.error.set(describeApiError(this.lang, error, 'sales.receiptFailed'));
+    }
+  }
+
+  protected describeQueued(entry: QueuedCheckout): string {
+    if (!entry.failure) {
+      return this.lang.t(entry.status === 'confirmed' ? 'offline.synced' : 'offline.pending');
+    }
+    if (entry.failure.code) {
+      const key = `errors.${entry.failure.code.replaceAll('.', '_')}`;
+      const translated = this.lang.t(key);
+      if (translated !== key) {
+        return translated;
+      }
+    }
+    return entry.failure.detail || this.lang.t('errors.generic');
+  }
+
+  private async autoSync(announce = false): Promise<void> {
+    const tenantId = this.session.context()?.tenantIdentifier;
+    if (!tenantId) {
+      return;
+    }
+    const foreign = this.queue.items().some(
+      (entry) =>
+        entry.tenantId !== tenantId &&
+        (entry.status === 'queued' || entry.status === 'failed'),
+    );
+    this.foreignPending.set(foreign);
+    const before = this.queue.pendingForTenant(tenantId).length;
+    await this.queue.syncAll(tenantId, (input) => this.sales.checkout(input));
+    if (announce) {
+      const after = this.queue.pendingForTenant(tenantId).length;
+      if (before > 0 && after === 0) {
+        this.queuedNotice.set(this.lang.t('offline.synced'));
+      }
+    }
+  }
+
+  private readPayments(): CheckoutPaymentInput[] | undefined {
     const payments: CheckoutPaymentInput[] = [];
     for (const [index, row] of this.payments.entries()) {
       if (row.amount === null || row.amount <= 0) {
         this.error.set(`Payment ${index + 1}: ${this.lang.t('pos.paymentAmountError')}`);
-        return;
+        return undefined;
       }
       if (row.method !== 'Cash' && !row.reference.trim()) {
         this.error.set(`Payment ${index + 1}: ${this.lang.t('pos.paymentReferenceError')}`);
-        return;
+        return undefined;
       }
       payments.push({
         method: row.method,
@@ -291,27 +430,13 @@ export class PosPage implements OnInit, OnDestroy {
         reference: row.reference.trim() || null,
       });
     }
+    return payments;
+  }
 
+  private async checkoutOnline(input: CheckoutInput): Promise<void> {
     this.completing.set(true);
     try {
-      const sale = await firstValueFrom(
-        this.sales.checkout({
-          items: this.cart.map((line) => ({
-            medicineId: line.medicineId,
-            quantity: line.quantity,
-            batchId: line.batchId || null,
-            discountAmount: line.discount || 0,
-          })),
-          payments,
-          discountAmount: this.headerDiscount || 0,
-          customerId: this.selectedCustomer()?.id ?? null,
-          customerName: this.customerName.trim() || null,
-          customerPhone: this.customerPhone.trim() || null,
-          prescriptionReference: this.prescriptionReference.trim() || null,
-          idempotencyKey: this.cartKey,
-        }),
-      );
-
+      const sale = await firstValueFrom(this.sales.checkout(input));
       this.receipt = await firstValueFrom(this.sales.getReceipt(sale.id));
     } catch (error) {
       this.error.set(this.describe(error, 'pos.checkoutFailed'));
@@ -344,19 +469,47 @@ export class PosPage implements OnInit, OnDestroy {
   private async runSearch(): Promise<void> {
     this.searching.set(true);
     this.error.set(undefined);
+    this.showingCached.set(false);
     try {
-      this.results.set(
-        await firstValueFrom(
-          this.catalog.searchMedicines({
-            search: this.search.trim() || undefined,
-            isActive: true,
-            take: 20,
-          }),
-        ),
+      const results = await firstValueFrom(
+        this.catalog.searchMedicines({
+          search: this.search.trim() || undefined,
+          isActive: true,
+          take: 20,
+        }),
       );
+      this.results.set(results);
+      this.catalogCache.store(results);
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        // Offline: display-only fallback from recently seen medicines. Prices and stock
+        // are re-resolved server-side; the sale itself queues until reconnect.
+        const term = this.search.trim();
+        this.results.set(
+          this.catalogCache.search(term).map((cached) => ({
+            id: cached.id,
+            brandName: cached.brandName,
+            genericName: cached.genericName,
+            strength: cached.strength,
+            dosageForm: '',
+            manufacturerId: null,
+            manufacturerName: null,
+            categoryId: null,
+            categoryName: null,
+            barcode: null,
+            unit: '',
+            packSize: null,
+            purchasePrice: 0,
+            sellingPrice: cached.sellingPrice,
+            reorderLevel: 0,
+            vatRate: null,
+            requiresPrescription: false,
+            isActive: true,
+          })),
+        );
+        this.showingCached.set(true);
       } else {
         this.error.set(this.lang.t('pos.searchFailed'));
       }
