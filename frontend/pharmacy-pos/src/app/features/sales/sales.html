@@ -16,7 +16,7 @@
       <h1>Sales history</h1>
       <p class="lede">
         Completed sales, newest first. Completed sales are immutable; corrections go through
-        returns (a later phase).
+        returns below (refunds are computed server-side from the original lines).
       </p>
     </header>
 
@@ -56,12 +56,13 @@
                 <th scope="col">Lines</th>
                 <th scope="col">Total</th>
                 <th scope="col">Paid</th>
+                <th scope="col"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
               @for (sale of sales(); track sale.id) {
-                <tr (click)="showReceipt(sale)" tabindex="0" (keydown.enter)="showReceipt(sale)">
-                  <td>
+                <tr>
+                  <td (click)="showReceipt(sale)" tabindex="0" (keydown.enter)="showReceipt(sale)">
                     <strong>{{ sale.invoiceNumber }}</strong>
                     @if (sale.customerName) {
                       <div class="muted small">{{ sale.customerName }}</div>
@@ -71,11 +72,124 @@
                   <td>{{ sale.items.length }}</td>
                   <td class="nowrap">৳{{ sale.totalAmount }}</td>
                   <td class="nowrap">৳{{ sale.paidAmount }}</td>
+                  <td class="actions">
+                    <button type="button" class="button button--small" (click)="showReceipt(sale)">
+                      Receipt
+                    </button>
+                    @if (canReadReturns()) {
+                      <button type="button" class="button button--small" (click)="startReturn(sale)">
+                        Return
+                      </button>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
+      }
+
+      @if (returnable(); as data) {
+        <div class="panel">
+          <h2>Return {{ data.invoiceNumber }}</h2>
+          <p class="muted">
+            Already refunded ৳{{ data.alreadyRefundedAmount }} of ৳{{ data.totalAmount }}.
+            The server refuses quantities beyond what is returnable.
+          </p>
+          @if (returnLoading()) {
+            <p class="muted">Loading returnable quantities…</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Item</th>
+                    <th scope="col">Sold</th>
+                    <th scope="col">Returned</th>
+                    <th scope="col">Returnable</th>
+                    <th scope="col">Return qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of data.items; track item.saleItemId) {
+                    <tr>
+                      <td>
+                        <strong>{{ item.medicineName }}</strong>
+                        <div class="muted small">{{ item.batchNumber }} · ≈ ৳{{ item.netPerUnit }}/unit</div>
+                      </td>
+                      <td>{{ item.soldQuantity }}</td>
+                      <td>{{ item.alreadyReturnedQuantity }}</td>
+                      <td>{{ item.returnableQuantity }}</td>
+                      <td>
+                        <input
+                          type="number"
+                          [(ngModel)]="returnQty[item.saleItemId]"
+                          [name]="'return-' + item.saleItemId"
+                          min="0"
+                          [max]="item.returnableQuantity"
+                          step="1"
+                        />
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="fields">
+              <label class="wide">
+                Reason
+                <input
+                  type="text"
+                  name="returnReason"
+                  [(ngModel)]="returnReason"
+                  maxlength="512"
+                  placeholder="Wrong item, damaged, …"
+                  autocomplete="off"
+                />
+              </label>
+              <label>
+                Restock
+                <select name="returnRestock" [(ngModel)]="returnRestock">
+                  <option [ngValue]="true">Restock to original batch</option>
+                  <option [ngValue]="false">No restock (damaged)</option>
+                </select>
+              </label>
+              <label>
+                Refund method
+                <select name="returnMethod" [(ngModel)]="returnMethod">
+                  @for (method of paymentMethods; track method) {
+                    <option [value]="method">{{ method }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                Refund reference
+                <input
+                  type="text"
+                  name="returnReference"
+                  [(ngModel)]="returnReference"
+                  maxlength="64"
+                  placeholder="TrxID (non-cash)"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+            <p class="muted">Estimated refund ≈ ৳{{ estimatedRefund() }} (final amount is computed server-side).</p>
+            @if (returnNotice(); as message) {
+              <p class="notice" role="status">{{ message }}</p>
+            }
+            <div class="row">
+              @if (canManageReturns()) {
+                <button type="button" class="button" (click)="submitReturn()" [disabled]="returnSaving()">
+                  {{ returnSaving() ? 'Processing…' : 'Process return' }}
+                </button>
+              }
+              <button type="button" class="button button--ghost" (click)="cancelReturn()">Close</button>
+            </div>
+          }
+        </div>
+      } @else if (returnNotice(); as message) {
+        <p class="notice" role="status">{{ message }}</p>
       }
     }
   </section>

@@ -18,6 +18,7 @@ public sealed class CheckoutInputValidator : AbstractValidator<CheckoutInput>
         RuleForEach(input => input.Payments).SetValidator(new CheckoutPaymentValidator());
 
         RuleFor(input => input.DiscountAmount).GreaterThanOrEqualTo(0);
+        RuleFor(input => input.CustomerId).NotEqual(Guid.Empty).When(input => input.CustomerId.HasValue);
         RuleFor(input => input.CustomerName).MaximumLength(160);
         RuleFor(input => input.CustomerPhone).MaximumLength(64);
         RuleFor(input => input.PrescriptionReference).MaximumLength(64);

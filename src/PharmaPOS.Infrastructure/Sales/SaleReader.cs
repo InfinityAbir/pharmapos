@@ -200,6 +200,7 @@ public sealed class SaleReader : ISaleReader
             TotalAmount: sale.TotalAmount,
             PaidAmount: sale.PaidAmount,
             ChangeDue: sale.PaidAmount - sale.TotalAmount,
+            CustomerId: sale.CustomerId,
             CustomerName: sale.CustomerName,
             CustomerPhone: sale.CustomerPhone,
             PrescriptionReference: sale.PrescriptionReference,

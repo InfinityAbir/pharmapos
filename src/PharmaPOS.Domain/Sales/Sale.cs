@@ -30,6 +30,9 @@ public sealed class Sale
 
     public string? CustomerPhone { get; set; }
 
+    /// <summary>Optional link to the customer record (Phase 6). Snapshot fields stay authoritative for receipts.</summary>
+    public Guid? CustomerId { get; set; }
+
     /// <summary>Optional prescription reference (business link only, never clinical content).</summary>
     public string? PrescriptionReference { get; set; }
 

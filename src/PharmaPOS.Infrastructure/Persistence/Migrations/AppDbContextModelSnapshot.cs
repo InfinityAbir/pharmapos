@@ -302,6 +302,56 @@ namespace PharmaPOS.Infrastructure.Persistence.Migrations
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
+            modelBuilder.Entity("PharmaPOS.Domain.Customers.Customer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "TenantId");
+
+                    b.HasIndex("TenantId", "IsActive");
+
+                    b.HasIndex("TenantId", "Name");
+
+                    b.HasIndex("TenantId", "Phone");
+
+                    b.ToTable("customers", (string)null);
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
             modelBuilder.Entity("PharmaPOS.Domain.Identity.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -867,6 +917,9 @@ namespace PharmaPOS.Infrastructure.Persistence.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)");
 
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("CustomerName")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)");
@@ -915,6 +968,8 @@ namespace PharmaPOS.Infrastructure.Persistence.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CustomerId");
 
                     b.HasIndex("TenantId", "InvoiceNumber")
                         .IsUnique();
@@ -1048,6 +1103,145 @@ namespace PharmaPOS.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "SaleId");
 
                     b.ToTable("sale_payments", (string)null);
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("PharmaPOS.Domain.Sales.SaleReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorSubject")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<decimal>("RefundAmount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<string>("RefundMethod")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("RefundReference")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("Restock")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("SaleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SaleId", "TenantId");
+
+                    b.HasIndex("TenantId", "OccurredAtUtc");
+
+                    b.HasIndex("TenantId", "SaleId");
+
+                    b.ToTable("sale_returns", (string)null);
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("PharmaPOS.Domain.Sales.SaleReturnIdempotencyKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("SaleReturnId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SaleReturnId", "TenantId");
+
+                    b.HasIndex("TenantId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("sale_return_idempotency_keys", (string)null);
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("PharmaPOS.Domain.Sales.SaleReturnItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MedicineId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("RefundAmount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("SaleItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SaleReturnId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchId", "TenantId");
+
+                    b.HasIndex("MedicineId", "TenantId");
+
+                    b.HasIndex("SaleItemId", "TenantId");
+
+                    b.HasIndex("SaleReturnId", "TenantId");
+
+                    b.HasIndex("TenantId", "SaleItemId");
+
+                    b.HasIndex("TenantId", "SaleReturnId");
+
+                    b.ToTable("sale_return_items", (string)null);
 
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
@@ -1251,6 +1445,69 @@ namespace PharmaPOS.Infrastructure.Persistence.Migrations
                     b.Navigation("Sale");
                 });
 
+            modelBuilder.Entity("PharmaPOS.Domain.Sales.SaleReturn", b =>
+                {
+                    b.HasOne("PharmaPOS.Domain.Sales.Sale", "Sale")
+                        .WithMany()
+                        .HasForeignKey("SaleId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Sale");
+                });
+
+            modelBuilder.Entity("PharmaPOS.Domain.Sales.SaleReturnIdempotencyKey", b =>
+                {
+                    b.HasOne("PharmaPOS.Domain.Sales.SaleReturn", "SaleReturn")
+                        .WithMany()
+                        .HasForeignKey("SaleReturnId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SaleReturn");
+                });
+
+            modelBuilder.Entity("PharmaPOS.Domain.Sales.SaleReturnItem", b =>
+                {
+                    b.HasOne("PharmaPOS.Domain.Inventory.MedicineBatch", "Batch")
+                        .WithMany()
+                        .HasForeignKey("BatchId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PharmaPOS.Domain.Catalog.Medicine", "Medicine")
+                        .WithMany()
+                        .HasForeignKey("MedicineId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PharmaPOS.Domain.Sales.SaleItem", "SaleItem")
+                        .WithMany()
+                        .HasForeignKey("SaleItemId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PharmaPOS.Domain.Sales.SaleReturn", "SaleReturn")
+                        .WithMany("Items")
+                        .HasForeignKey("SaleReturnId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Batch");
+
+                    b.Navigation("Medicine");
+
+                    b.Navigation("SaleItem");
+
+                    b.Navigation("SaleReturn");
+                });
+
             modelBuilder.Entity("PharmaPOS.Domain.Catalog.Manufacturer", b =>
                 {
                     b.Navigation("Medicines");
@@ -1288,6 +1545,11 @@ namespace PharmaPOS.Infrastructure.Persistence.Migrations
                     b.Navigation("Items");
 
                     b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("PharmaPOS.Domain.Sales.SaleReturn", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

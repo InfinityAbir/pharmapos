@@ -419,6 +419,7 @@ public sealed class SalesTests : IClassFixture<PostgresFixture>, IAsyncLifetime
             Items: items,
             Payments: payments,
             DiscountAmount: 0,
+            CustomerId: null,
             CustomerName: null,
             CustomerPhone: null,
             PrescriptionReference: null,

@@ -22,6 +22,7 @@ public sealed class CheckoutValidatorTests
         Items: [Item()],
         Payments: [Cash(100.00m)],
         DiscountAmount: 0,
+        CustomerId: null,
         CustomerName: null,
         CustomerPhone: null,
         PrescriptionReference: null,

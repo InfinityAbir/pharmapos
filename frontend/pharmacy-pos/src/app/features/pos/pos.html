@@ -127,6 +127,19 @@
                 Bill discount (BDT)
                 <input type="number" name="headerDiscount" [(ngModel)]="headerDiscount" min="0" step="0.01" />
               </label>
+              @if (canUseCustomers()) {
+                <label>
+                  Link customer <span class="muted">(optional)</span>
+                  <input
+                    type="text"
+                    name="customerSearch"
+                    [(ngModel)]="customerSearch"
+                    (ngModelChange)="onCustomerSearchInput()"
+                    placeholder="Search name or phone…"
+                    autocomplete="off"
+                  />
+                </label>
+              }
               <label>
                 Customer name <span class="muted">(optional)</span>
                 <input type="text" name="customerName" [(ngModel)]="customerName" maxlength="160" autocomplete="off" />
@@ -135,6 +148,39 @@
                 Customer phone <span class="muted">(optional)</span>
                 <input type="text" name="customerPhone" [(ngModel)]="customerPhone" maxlength="64" autocomplete="off" />
               </label>
+              @if (canUseCustomers()) {
+                <div class="customer-link">
+                  @if (selectedCustomer(); as linked) {
+                    <p class="muted">
+                      Linked: <strong>{{ linked.name }}</strong>
+                      <button type="button" class="link link--danger" (click)="clearCustomer()">
+                        Clear
+                      </button>
+                    </p>
+                  } @else {
+                    @if (customerSearching()) {
+                      <p class="muted">Searching customers…</p>
+                    } @else if (customerResults().length > 0) {
+                      <ul class="results">
+                        @for (customer of customerResults(); track customer.id) {
+                          <li>
+                            <button type="button" class="result" (click)="selectCustomer(customer)">
+                              <span>
+                                <strong>{{ customer.name }}</strong>
+                                <span class="muted small"> · {{ customer.phone ?? 'no phone' }}</span>
+                              </span>
+                              <span class="nowrap">Select</span>
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    }
+                    <button type="button" class="link" (click)="quickCreateCustomer()">
+                      + Quick-create customer
+                    </button>
+                  }
+                </div>
+              }
               <label>
                 Prescription ref <span class="muted">(optional)</span>
                 <input

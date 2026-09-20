@@ -1,0 +1,172 @@
+<section class="page">
+  <header class="page__head">
+    <p class="eyebrow">Sales</p>
+    <h1>Customers</h1>
+    <p class="lede">
+      Optional for cash sales, linked for history. Deletion is refused while sales reference a
+      customer. Writes are guarded by <code>tenant.customers.manage</code> on the server.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (forbidden()) {
+    <p class="notice" role="status">
+      Your account does not have the <code>tenant.customers.read</code> permission.
+    </p>
+  } @else {
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    @if (detail(); as history) {
+      <div class="panel">
+        <h2>{{ history.customer.name }}</h2>
+        <p class="muted">
+          {{ history.customer.phone ?? 'No phone' }}
+          @if (history.customer.email) {
+            · {{ history.customer.email }}
+          }
+        </p>
+        @if (history.customer.address) {
+          <p class="muted">{{ history.customer.address }}</p>
+        }
+        <h3>Recent sales</h3>
+        @if (history.recentSales.length === 0) {
+          <p class="muted">No linked sales yet.</p>
+        } @else {
+          <ul>
+            @for (sale of history.recentSales; track sale.saleId) {
+              <li>{{ sale.invoiceNumber }} · {{ sale.occurredAtUtc | date: 'medium' }} · ৳{{ sale.totalAmount }}</li>
+            }
+          </ul>
+        }
+        <div class="row">
+          <button type="button" class="button button--ghost" (click)="backToList()">Back to list</button>
+        </div>
+      </div>
+    }
+
+    <div class="panel">
+      <label>
+        Search
+        <input
+          type="text"
+          name="search"
+          [(ngModel)]="search"
+          (ngModelChange)="onSearchInput()"
+          placeholder="Name or phone…"
+          autocomplete="off"
+        />
+      </label>
+    </div>
+
+    <form class="panel" (ngSubmit)="save()">
+      <h2>{{ editingId() ? 'Edit customer' : 'New customer' }}</h2>
+      <div class="fields">
+        <label>
+          Name
+          <input type="text" name="name" [(ngModel)]="form.name" maxlength="160" autocomplete="off" />
+        </label>
+        <label>
+          Phone
+          <input type="text" name="phone" [(ngModel)]="form.phone" maxlength="64" autocomplete="off" />
+        </label>
+        <label>
+          Email
+          <input type="email" name="email" [(ngModel)]="form.email" maxlength="320" autocomplete="off" />
+        </label>
+        <label class="wide">
+          Address
+          <input type="text" name="address" [(ngModel)]="form.address" maxlength="512" autocomplete="off" />
+        </label>
+        <label class="wide">
+          Notes
+          <input type="text" name="notes" [(ngModel)]="form.notes" maxlength="1024" autocomplete="off" />
+        </label>
+      </div>
+      @if (notice(); as message) {
+        <p class="notice" role="status">{{ message }}</p>
+      }
+      <div class="row">
+        <button type="submit" class="button" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Create customer' }}
+        </button>
+        @if (editingId()) {
+          <button type="button" class="button button--ghost" (click)="startCreate()">Cancel</button>
+        }
+      </div>
+    </form>
+
+    @if (customers().length === 0) {
+      <p class="muted">No customers found.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Customer</th>
+              <th scope="col">Contact</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (customer of customers(); track customer.id) {
+              <tr>
+                <td>
+                  <strong>{{ customer.name }}</strong>
+                  @if (customer.notes) {
+                    <div class="muted small">{{ customer.notes }}</div>
+                  }
+                </td>
+                <td>
+                  {{ customer.phone ?? '—' }}
+                  @if (customer.email) {
+                    <div class="muted small">{{ customer.email }}</div>
+                  }
+                  @if (customer.address) {
+                    <div class="muted small">{{ customer.address }}</div>
+                  }
+                </td>
+                <td>
+                  <span class="pill" [class.pill--warn]="!customer.isActive">
+                    {{ customer.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button type="button" class="button button--small" (click)="showHistory(customer)">
+                    History
+                  </button>
+                  <button type="button" class="button button--small" (click)="startEdit(customer)">
+                    Edit
+                  </button>
+                  @if (customer.isActive) {
+                    <button
+                      type="button"
+                      class="button button--small"
+                      (click)="setStatus(customer, false)"
+                    >
+                      Deactivate
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="button button--small"
+                      (click)="setStatus(customer, true)"
+                    >
+                      Activate
+                    </button>
+                  }
+                  <button type="button" class="button button--small button--danger" (click)="remove(customer)">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

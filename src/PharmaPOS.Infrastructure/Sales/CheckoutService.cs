@@ -73,13 +73,48 @@ public sealed class CheckoutService : ICheckoutService
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
             var actor = Actor();
+
+            // Optional customer link (Phase 6): resolve the snapshot from the record when a
+            // CustomerId is supplied; explicit snapshot fields still win when provided.
+            Guid? customerId = null;
+            var customerName = Normalize(input.CustomerName);
+            var customerPhone = Normalize(input.CustomerPhone);
+
+            if (input.CustomerId.HasValue)
+            {
+                var customer = await _dbContext.Customers
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        candidate => candidate.Id == input.CustomerId.Value,
+                        cancellationToken);
+
+                if (customer is null)
+                {
+                    throw new NotFoundException(
+                        "customer.not_found",
+                        "Customer not found in this tenant.");
+                }
+
+                if (!customer.IsActive)
+                {
+                    throw new BusinessRuleException(
+                        "sale.customer_inactive",
+                        "The selected customer is deactivated.");
+                }
+
+                customerId = customer.Id;
+                customerName ??= customer.Name;
+                customerPhone ??= customer.Phone;
+            }
+
             var sale = new Sale
             {
                 TenantId = tenantId,
                 InvoiceNumber = string.Empty,
                 OccurredAtUtc = DateTimeOffset.UtcNow,
-                CustomerName = Normalize(input.CustomerName),
-                CustomerPhone = Normalize(input.CustomerPhone),
+                CustomerId = customerId,
+                CustomerName = customerName,
+                CustomerPhone = customerPhone,
                 PrescriptionReference = Normalize(input.PrescriptionReference),
                 CashierSubject = actor,
             };

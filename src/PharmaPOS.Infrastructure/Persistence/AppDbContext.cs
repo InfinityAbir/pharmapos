@@ -4,6 +4,7 @@ using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
 using PharmaPOS.Domain.Auditing;
 using PharmaPOS.Domain.Catalog;
+using PharmaPOS.Domain.Customers;
 using PharmaPOS.Domain.Identity;
 using PharmaPOS.Domain.Inventory;
 using PharmaPOS.Domain.Purchasing;
@@ -54,6 +55,10 @@ public sealed class AppDbContext : MultiTenantDbContext
     public DbSet<SalePayment> SalePayments => Set<SalePayment>();
     public DbSet<SaleIdempotencyKey> SaleIdempotencyKeys => Set<SaleIdempotencyKey>();
     public DbSet<InvoiceCounter> InvoiceCounters => Set<InvoiceCounter>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<SaleReturn> SaleReturns => Set<SaleReturn>();
+    public DbSet<SaleReturnItem> SaleReturnItems => Set<SaleReturnItem>();
+    public DbSet<SaleReturnIdempotencyKey> SaleReturnIdempotencyKeys => Set<SaleReturnIdempotencyKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,5 +86,9 @@ public sealed class AppDbContext : MultiTenantDbContext
         modelBuilder.Entity<SalePayment>().IsMultiTenant();
         modelBuilder.Entity<SaleIdempotencyKey>().IsMultiTenant();
         modelBuilder.Entity<InvoiceCounter>().IsMultiTenant();
+        modelBuilder.Entity<Customer>().IsMultiTenant();
+        modelBuilder.Entity<SaleReturn>().IsMultiTenant();
+        modelBuilder.Entity<SaleReturnItem>().IsMultiTenant();
+        modelBuilder.Entity<SaleReturnIdempotencyKey>().IsMultiTenant();
     }
 }

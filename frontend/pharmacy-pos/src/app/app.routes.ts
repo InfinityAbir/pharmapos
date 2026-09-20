@@ -85,5 +85,11 @@ export const routes: Routes = [
     canActivate: [permissionGuard(PERMISSIONS.tenantSalesRead)],
     loadComponent: () => import('./features/sales/sales').then((m) => m.SalesPage),
   },
+  {
+    path: 'customers',
+    title: 'Customers · PharmaPOS',
+    canActivate: [permissionGuard(PERMISSIONS.tenantCustomersRead)],
+    loadComponent: () => import('./features/customers/customers').then((m) => m.CustomersPage),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

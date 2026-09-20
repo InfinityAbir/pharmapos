@@ -20,6 +20,7 @@ public sealed class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.Property(sale => sale.PaidAmount).HasPrecision(18, 4);
         builder.Property(sale => sale.CustomerName).HasMaxLength(160);
         builder.Property(sale => sale.CustomerPhone).HasMaxLength(64);
+        builder.Property(sale => sale.CustomerId);
         builder.Property(sale => sale.PrescriptionReference).HasMaxLength(64);
         builder.Property(sale => sale.CashierSubject).HasMaxLength(320);
 
@@ -31,5 +32,7 @@ public sealed class SaleConfiguration : IEntityTypeConfiguration<Sale>
 
         // Composite alternate key used by tenant-composite FKs (items, payments, idempotency).
         builder.HasAlternateKey(sale => new { sale.Id, sale.TenantId });
+
+        builder.HasIndex(sale => new { sale.TenantId, sale.CustomerId });
     }
 }

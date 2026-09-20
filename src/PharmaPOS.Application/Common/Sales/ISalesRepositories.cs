@@ -21,6 +21,7 @@ public sealed record CheckoutInput(
     IReadOnlyList<CheckoutItemInput> Items,
     IReadOnlyList<CheckoutPaymentInput> Payments,
     decimal DiscountAmount,
+    Guid? CustomerId,
     string? CustomerName,
     string? CustomerPhone,
     string? PrescriptionReference,

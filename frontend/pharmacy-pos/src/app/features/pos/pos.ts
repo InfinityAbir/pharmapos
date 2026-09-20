@@ -11,6 +11,7 @@ import {
   Receipt,
   SalesApi,
 } from '../../core/http/sales-api.service';
+import { Customer, CustomersApi } from '../../core/http/customers-api.service';
 import { SessionService } from '../../core/session/session.service';
 import { ReceiptView } from '../sales/receipt';
 
@@ -52,6 +53,7 @@ export class PosPage implements OnInit, OnDestroy {
   private readonly sales = inject(SalesApi);
   private readonly catalog = inject(CatalogApi);
   private readonly inventory = inject(InventoryApi);
+  private readonly customers = inject(CustomersApi);
   protected readonly session = inject(SessionService);
 
   protected readonly canManage = PERMISSIONS.tenantSalesManage;
@@ -62,17 +64,22 @@ export class PosPage implements OnInit, OnDestroy {
   protected readonly forbidden = signal(false);
   protected readonly error = signal<string | undefined>(undefined);
   protected readonly completing = signal(false);
+  protected readonly customerResults = signal<readonly Customer[]>([]);
+  protected readonly customerSearching = signal(false);
+  protected readonly selectedCustomer = signal<Customer | undefined>(undefined);
 
   protected search = '';
   protected cart: CartLine[] = [];
   protected payments: PayRow[] = [blankPayRow()];
   protected headerDiscount: number | null = null;
+  protected customerSearch = '';
   protected customerName = '';
   protected customerPhone = '';
   protected prescriptionReference = '';
   protected receipt: Receipt | undefined;
   protected cartKey = newIdempotencyKey();
   private debounce: ReturnType<typeof setTimeout> | undefined;
+  private customerDebounce: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
     void this.initialSearch();
@@ -82,10 +89,80 @@ export class PosPage implements OnInit, OnDestroy {
     if (this.debounce) {
       clearTimeout(this.debounce);
     }
+    if (this.customerDebounce) {
+      clearTimeout(this.customerDebounce);
+    }
   }
 
   protected hasPermission(permission: string): boolean {
     return this.session.hasPermission(permission);
+  }
+
+  protected canUseCustomers(): boolean {
+    return (
+      this.session.hasPermission('tenant.customers.read') ||
+      this.session.hasPermission('tenant.customers.manage')
+    );
+  }
+
+  protected onCustomerSearchInput(): void {
+    if (this.customerDebounce) {
+      clearTimeout(this.customerDebounce);
+    }
+    this.customerDebounce = setTimeout(() => void this.runCustomerSearch(), 300);
+  }
+
+  protected async runCustomerSearch(): Promise<void> {
+    const term = this.customerSearch.trim();
+    if (!term) {
+      this.customerResults.set([]);
+      return;
+    }
+    this.customerSearching.set(true);
+    try {
+      this.customerResults.set(await firstValueFrom(this.customers.listCustomers(term)));
+    } catch {
+      this.customerResults.set([]);
+    } finally {
+      this.customerSearching.set(false);
+    }
+  }
+
+  protected selectCustomer(customer: Customer): void {
+    this.selectedCustomer.set(customer);
+    this.customerName = customer.name;
+    this.customerPhone = customer.phone ?? '';
+    this.customerResults.set([]);
+    this.customerSearch = '';
+  }
+
+  protected clearCustomer(): void {
+    this.selectedCustomer.set(undefined);
+    this.customerName = '';
+    this.customerPhone = '';
+  }
+
+  protected async quickCreateCustomer(): Promise<void> {
+    this.error.set(undefined);
+    const name = this.customerName.trim() || this.customerSearch.trim();
+    if (!name) {
+      this.error.set('Enter a customer name to create.');
+      return;
+    }
+    try {
+      const created = await firstValueFrom(
+        this.customers.createCustomer({
+          name,
+          phone: this.customerPhone.trim() || null,
+          email: null,
+          address: null,
+          notes: null,
+        }),
+      );
+      this.selectCustomer(created);
+    } catch (error) {
+      this.error.set(this.describe(error, 'The customer could not be created.'));
+    }
   }
 
   protected onSearchInput(): void {
@@ -223,6 +300,7 @@ export class PosPage implements OnInit, OnDestroy {
           })),
           payments,
           discountAmount: this.headerDiscount || 0,
+          customerId: this.selectedCustomer()?.id ?? null,
           customerName: this.customerName.trim() || null,
           customerPhone: this.customerPhone.trim() || null,
           prescriptionReference: this.prescriptionReference.trim() || null,
@@ -242,6 +320,9 @@ export class PosPage implements OnInit, OnDestroy {
     this.cart = [];
     this.payments = [blankPayRow()];
     this.headerDiscount = null;
+    this.selectedCustomer.set(undefined);
+    this.customerSearch = '';
+    this.customerResults.set([]);
     this.customerName = '';
     this.customerPhone = '';
     this.prescriptionReference = '';

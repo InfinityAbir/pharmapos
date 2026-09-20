@@ -32,6 +32,7 @@ export interface Sale {
   readonly totalAmount: number;
   readonly paidAmount: number;
   readonly changeDue: number;
+  readonly customerId: string | null;
   readonly customerName: string | null;
   readonly customerPhone: string | null;
   readonly prescriptionReference: string | null;
@@ -68,6 +69,7 @@ export interface CheckoutInput {
   items: CheckoutItemInput[];
   payments: CheckoutPaymentInput[];
   discountAmount: number;
+  customerId: string | null;
   customerName: string | null;
   customerPhone: string | null;
   prescriptionReference: string | null;

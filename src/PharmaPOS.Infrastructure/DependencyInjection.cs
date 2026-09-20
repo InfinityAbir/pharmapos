@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PharmaPOS.Application.Common.Auditing;
 using PharmaPOS.Application.Common.Authorization;
 using PharmaPOS.Application.Common.Catalog;
+using PharmaPOS.Application.Common.Customers;
 using PharmaPOS.Application.Common.Inventory;
 using PharmaPOS.Application.Common.Purchasing;
 using PharmaPOS.Application.Common.Sales;
@@ -13,6 +14,7 @@ using PharmaPOS.Application.Common.Tenancy;
 using PharmaPOS.Application.Features.Auditing;
 using PharmaPOS.Infrastructure.Auditing;
 using PharmaPOS.Infrastructure.Catalog;
+using PharmaPOS.Infrastructure.Customers;
 using PharmaPOS.Infrastructure.Identity;
 using PharmaPOS.Infrastructure.Inventory;
 using PharmaPOS.Infrastructure.Purchasing;
@@ -75,6 +77,9 @@ public static class DependencyInjection
 
         services.AddScoped<ICheckoutService, CheckoutService>();
         services.AddScoped<ISaleReader, SaleReader>();
+        services.AddScoped<IReturnService, ReturnService>();
+        services.AddScoped<IReturnReader, ReturnReader>();
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
 
         services
             .AddOptions<DatabaseOptions>()

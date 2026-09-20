@@ -125,6 +125,7 @@ public sealed record CheckoutRequest(
     IReadOnlyList<CheckoutItemRequest> Items,
     IReadOnlyList<CheckoutPaymentRequest> Payments,
     decimal DiscountAmount,
+    Guid? CustomerId,
     string? CustomerName,
     string? CustomerPhone,
     string? PrescriptionReference,
@@ -133,6 +134,6 @@ public sealed record CheckoutRequest(
     public CheckoutInput ToInput() => new(
         Items.Select(item => item.ToInput()).ToArray(),
         Payments.Select(payment => payment.ToInput()).ToArray(),
-        DiscountAmount, CustomerName, CustomerPhone, PrescriptionReference,
+        DiscountAmount, CustomerId, CustomerName, CustomerPhone, PrescriptionReference,
         IdempotencyKey);
 }

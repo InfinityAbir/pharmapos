@@ -28,6 +28,7 @@ public sealed record SaleDto(
     decimal TotalAmount,
     decimal PaidAmount,
     decimal ChangeDue,
+    Guid? CustomerId,
     string? CustomerName,
     string? CustomerPhone,
     string? PrescriptionReference,
