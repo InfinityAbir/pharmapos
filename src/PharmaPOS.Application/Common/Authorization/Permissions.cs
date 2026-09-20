@@ -29,6 +29,8 @@ public static class Permissions
         public const string InventoryManage = "tenant.inventory.manage";
         public const string PurchasingRead = "tenant.purchasing.read";
         public const string PurchasingManage = "tenant.purchasing.manage";
+        public const string SalesRead = "tenant.sales.read";
+        public const string SalesManage = "tenant.sales.manage";
     }
 
     /// <summary>Complete catalog, used for seeding and for validating role definitions.</summary>
@@ -46,6 +48,8 @@ public static class Permissions
         new(Permissions.Tenant.InventoryManage, "tenant", "Receive, adjust and expire stock."),
         new(Permissions.Tenant.PurchasingRead, "tenant", "View suppliers and purchases."),
         new(Permissions.Tenant.PurchasingManage, "tenant", "Manage suppliers and purchases."),
+        new(Permissions.Tenant.SalesRead, "tenant", "View sales history and receipts."),
+        new(Permissions.Tenant.SalesManage, "tenant", "Operate checkout and complete sales."),
     ];
 
     /// <summary>Whether a permission code exists in the catalog.</summary>

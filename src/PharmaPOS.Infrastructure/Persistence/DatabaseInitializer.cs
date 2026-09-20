@@ -124,7 +124,8 @@ public static class DatabaseInitializer
              Permissions.Tenant.RolesManage, Permissions.Tenant.MedicinesRead,
              Permissions.Tenant.MedicinesManage, Permissions.Tenant.PharmacyManage,
              Permissions.Tenant.InventoryRead, Permissions.Tenant.InventoryManage,
-             Permissions.Tenant.PurchasingRead, Permissions.Tenant.PurchasingManage],
+             Permissions.Tenant.PurchasingRead, Permissions.Tenant.PurchasingManage,
+             Permissions.Tenant.SalesRead, Permissions.Tenant.SalesManage],
             cancellationToken);
 
         var ownerRole = await EnsureRoleAsync(
@@ -133,15 +134,18 @@ public static class DatabaseInitializer
              Permissions.Tenant.RolesManage, Permissions.Tenant.MedicinesRead,
              Permissions.Tenant.MedicinesManage, Permissions.Tenant.PharmacyManage,
              Permissions.Tenant.InventoryRead, Permissions.Tenant.InventoryManage,
-             Permissions.Tenant.PurchasingRead, Permissions.Tenant.PurchasingManage],
+             Permissions.Tenant.PurchasingRead, Permissions.Tenant.PurchasingManage,
+             Permissions.Tenant.SalesRead, Permissions.Tenant.SalesManage],
             cancellationToken);
 
-        await EnsureRoleAsync(db, "Manager", "Shift supervision, catalog, stock and purchase lookup.",
+        await EnsureRoleAsync(db, "Manager", "Shift supervision, catalog, stock, purchase and sales lookup.",
             isSystem: true, [Permissions.Tenant.MedicinesRead, Permissions.Tenant.InventoryRead,
-                             Permissions.Tenant.PurchasingRead],
+                             Permissions.Tenant.PurchasingRead, Permissions.Tenant.SalesRead],
             cancellationToken);
-        await EnsureRoleAsync(db, "Cashier", "Checkout operation (permissions arrive with the POS phase).",
-            isSystem: true, [], cancellationToken);
+        await EnsureRoleAsync(db, "Cashier", "Checkout operation and sales history.",
+            isSystem: true, [Permissions.Tenant.MedicinesRead, Permissions.Tenant.SalesRead,
+                             Permissions.Tenant.SalesManage],
+            cancellationToken);
         await EnsureRoleAsync(db, "Inventory Staff", "Stock receiving, adjustments and expiry handling.",
             isSystem: true, [Permissions.Tenant.MedicinesRead, Permissions.Tenant.InventoryRead,
                              Permissions.Tenant.InventoryManage],

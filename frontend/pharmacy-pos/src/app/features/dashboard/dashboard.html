@@ -102,6 +102,16 @@
       </article>
     }
 
+    @if (canReadSales() && todaySales(); as today) {
+      <article class="card">
+        <h2>Today's sales</h2>
+        <dl class="facts">
+          <div><dt>Transactions</dt><dd>{{ today.saleCount }}</dd></div>
+          <div><dt>Total</dt><dd>৳{{ today.totalAmount }}</dd></div>
+        </dl>
+      </article>
+    }
+
     <article class="card">
       <h2>Roles</h2>
       @if (session.context()?.roles?.length) {

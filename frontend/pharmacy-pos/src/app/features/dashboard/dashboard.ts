@@ -7,6 +7,7 @@ import { CatalogApi, CatalogSummary } from '../../core/http/catalog-api.service'
 import { AlertsSummary, InventoryApi } from '../../core/http/inventory-api.service';
 import { PlatformApi, PlatformInfo } from '../../core/http/platform-api.service';
 import { PurchasingApi, PurchasingSummary } from '../../core/http/purchasing-api.service';
+import { SalesApi, TodaySales } from '../../core/http/sales-api.service';
 import { SessionService } from '../../core/session/session.service';
 
 @Component({
@@ -20,6 +21,7 @@ export class Dashboard implements OnInit {
   private readonly catalog = inject(CatalogApi);
   private readonly inventory = inject(InventoryApi);
   private readonly purchasing = inject(PurchasingApi);
+  private readonly sales = inject(SalesApi);
   private readonly keycloak = inject(KeycloakService);
   protected readonly session = inject(SessionService);
 
@@ -28,6 +30,7 @@ export class Dashboard implements OnInit {
   protected readonly summary = signal<CatalogSummary | undefined>(undefined);
   protected readonly alerts = signal<AlertsSummary | undefined>(undefined);
   protected readonly purchasingSummary = signal<PurchasingSummary | undefined>(undefined);
+  protected readonly todaySales = signal<TodaySales | undefined>(undefined);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | undefined>(undefined);
 
@@ -49,6 +52,10 @@ export class Dashboard implements OnInit {
 
   protected canReadPurchasing(): boolean {
     return this.session.hasPermission(PERMISSIONS.tenantPurchasingRead);
+  }
+
+  protected canReadSales(): boolean {
+    return this.session.hasPermission(PERMISSIONS.tenantSalesRead);
   }
 
   private async load(): Promise<void> {
@@ -73,6 +80,9 @@ export class Dashboard implements OnInit {
           this.purchasingSummary.set(
             await firstValueFrom(this.purchasing.purchasingSummary()),
           );
+        }
+        if (this.canReadSales()) {
+          this.todaySales.set(await firstValueFrom(this.sales.todaySales()));
         }
       }
     } catch {

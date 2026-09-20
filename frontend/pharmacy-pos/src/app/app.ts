@@ -23,6 +23,8 @@ export class App implements OnInit {
   protected readonly canManageMedicines = PERMISSIONS.tenantMedicinesManage;
   protected readonly canReadInventory = PERMISSIONS.tenantInventoryRead;
   protected readonly canReadPurchasing = PERMISSIONS.tenantPurchasingRead;
+  protected readonly canReadSales = PERMISSIONS.tenantSalesRead;
+  protected readonly canManageSales = PERMISSIONS.tenantSalesManage;
 
   ngOnInit(): void {
     if (this.keycloak.isAuthenticated()) {

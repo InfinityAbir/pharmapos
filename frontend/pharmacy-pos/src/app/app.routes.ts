@@ -73,5 +73,17 @@ export const routes: Routes = [
     canActivate: [permissionGuard(PERMISSIONS.tenantPurchasingRead)],
     loadComponent: () => import('./features/purchases/purchases').then((m) => m.PurchasesPage),
   },
+  {
+    path: 'pos',
+    title: 'Point of sale · PharmaPOS',
+    canActivate: [permissionGuard(PERMISSIONS.tenantSalesManage)],
+    loadComponent: () => import('./features/pos/pos').then((m) => m.PosPage),
+  },
+  {
+    path: 'sales',
+    title: 'Sales · PharmaPOS',
+    canActivate: [permissionGuard(PERMISSIONS.tenantSalesRead)],
+    loadComponent: () => import('./features/sales/sales').then((m) => m.SalesPage),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

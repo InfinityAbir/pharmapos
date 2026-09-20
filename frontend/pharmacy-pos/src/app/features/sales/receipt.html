@@ -1,0 +1,69 @@
+<article class="receipt">
+  <header class="receipt__shop">
+    <h2>{{ receipt.pharmacy.pharmacyName }}</h2>
+    @if (receipt.pharmacy.address) {
+      <p>{{ receipt.pharmacy.address }}</p>
+    }
+    @if (receipt.pharmacy.phone) {
+      <p>{{ receipt.pharmacy.phone }}</p>
+    }
+  </header>
+
+  <dl class="receipt__meta">
+    <div><dt>Invoice</dt><dd>{{ receipt.sale.invoiceNumber }}</dd></div>
+    <div><dt>Date</dt><dd>{{ receipt.sale.occurredAtUtc | date: 'medium' }}</dd></div>
+    @if (receipt.sale.cashierSubject) {
+      <div><dt>Cashier</dt><dd>{{ receipt.sale.cashierSubject }}</dd></div>
+    }
+    @if (receipt.sale.customerName) {
+      <div><dt>Customer</dt><dd>{{ receipt.sale.customerName }}</dd></div>
+    }
+  </dl>
+
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Item</th>
+        <th scope="col">Qty</th>
+        <th scope="col">Price</th>
+        <th scope="col">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of receipt.sale.items; track item.id) {
+        <tr>
+          <td>
+            {{ item.medicineName }}
+            <div class="muted small">{{ item.batchNumber }}</div>
+          </td>
+          <td>{{ item.quantity }}</td>
+          <td class="nowrap">৳{{ item.unitPrice }}</td>
+          <td class="nowrap">৳{{ item.lineTotal }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <dl class="receipt__totals">
+    <div><dt>Subtotal</dt><dd>৳{{ receipt.sale.subtotal }}</dd></div>
+    @if (receipt.sale.discountAmount > 0) {
+      <div><dt>Discount</dt><dd>−৳{{ receipt.sale.discountAmount }}</dd></div>
+    }
+    <div class="grand"><dt>Total</dt><dd>৳{{ receipt.sale.totalAmount }}</dd></div>
+    @for (payment of receipt.sale.payments; track payment.id) {
+      <div>
+        <dt>{{ payment.method }}{{ payment.reference ? ' · ' + payment.reference : '' }}</dt>
+        <dd>৳{{ payment.amount }}</dd>
+      </div>
+    }
+    @if (receipt.sale.changeDue > 0) {
+      <div><dt>Change</dt><dd>৳{{ receipt.sale.changeDue }}</dd></div>
+    }
+  </dl>
+
+  @if (receipt.pharmacy.invoiceFooter) {
+    <p class="receipt__footer">{{ receipt.pharmacy.invoiceFooter }}</p>
+  }
+
+  <button type="button" class="button no-print" (click)="print()">Print receipt</button>
+</article>

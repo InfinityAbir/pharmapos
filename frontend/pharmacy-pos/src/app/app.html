@@ -37,6 +37,12 @@
           <a routerLink="/suppliers" routerLinkActive="is-active">Suppliers</a>
           <a routerLink="/purchases" routerLinkActive="is-active">Purchases</a>
         }
+        @if (session.hasPermission(canManageSales)) {
+          <a routerLink="/pos" routerLinkActive="is-active">POS</a>
+        }
+        @if (session.hasPermission(canReadSales)) {
+          <a routerLink="/sales" routerLinkActive="is-active">Sales</a>
+        }
       }
     </nav>
 

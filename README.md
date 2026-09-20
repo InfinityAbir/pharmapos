@@ -3,10 +3,10 @@
 A multi-tenant SaaS point-of-sale platform for small and medium pharmacies, built with an
 architecture and security posture intended for production from the first commit.
 
-> **Current status: Phase 4 — suppliers & purchasing.** The solution builds, tests and runs
-> end-to-end (Keycloak login → server-resolved membership → purchase drafts posted atomically
-> and idempotently to stock), but sales and later phases are intentionally **not** implemented
-> yet.
+> **Current status: Phase 5 — POS & sales.** The solution builds, tests and runs end-to-end
+> (Keycloak login → server-resolved membership → atomic idempotent checkout with FEFO batch
+> allocation and receipts), but returns, localization and later phases are intentionally **not**
+> implemented yet.
 
 ## What exists today
 
@@ -23,7 +23,8 @@ architecture and security posture intended for production from the first commit.
 | Catalog | Tenant-scoped medicines (brand/generic/strength/form, per-tenant barcodes), categories, manufacturers, pharmacy profile |
 | Inventory | Batch-level stock with expiry, derived totals, low-stock/expiry alerts, append-only movement ledger |
 | Purchasing | Tenant-scoped suppliers, draft → received/cancelled purchases, atomic idempotent receiving into stock |
-| Tests | 75 unit + 43 integration (real PostgreSQL via Testcontainers) + 11 frontend unit |
+| Sales | Atomic idempotent checkout (FEFO allocation, server-side pricing, split tender, sequential invoices), history, printable receipts |
+| Tests | 87 unit + 51 integration (real PostgreSQL via Testcontainers) + 11 frontend unit |
 
 Detailed design lives in [`docs/architecture.md`](docs/architecture.md) and the decision records in
 [`docs/adr/`](docs/adr/).

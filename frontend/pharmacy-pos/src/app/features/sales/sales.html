@@ -1,0 +1,82 @@
+@if (receipt(); as slip) {
+  <section class="page">
+    <header class="page__head no-print">
+      <p class="eyebrow">Sales</p>
+      <h1>Receipt {{ slip.sale.invoiceNumber }}</h1>
+    </header>
+    <app-receipt [receipt]="slip" />
+    <div class="row no-print">
+      <button type="button" class="button" (click)="backToList()">Back to sales</button>
+    </div>
+  </section>
+} @else {
+  <section class="page">
+    <header class="page__head">
+      <p class="eyebrow">Sales</p>
+      <h1>Sales history</h1>
+      <p class="lede">
+        Completed sales, newest first. Completed sales are immutable; corrections go through
+        returns (a later phase).
+      </p>
+    </header>
+
+    @if (loading()) {
+      <p class="muted">Loading…</p>
+    } @else if (forbidden()) {
+      <p class="notice" role="status">
+        Your account does not have the <code>tenant.sales.read</code> permission.
+      </p>
+    } @else {
+      @if (error(); as message) {
+        <p class="alert" role="alert">{{ message }}</p>
+      }
+
+      <div class="panel">
+        <div class="fields fields--filters">
+          <label>
+            From
+            <input type="date" name="from" [(ngModel)]="from" (ngModelChange)="onFilterChange()" />
+          </label>
+          <label>
+            To
+            <input type="date" name="to" [(ngModel)]="to" (ngModelChange)="onFilterChange()" />
+          </label>
+        </div>
+      </div>
+
+      @if (sales().length === 0) {
+        <p class="muted">No sales in this period yet.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Invoice</th>
+                <th scope="col">When</th>
+                <th scope="col">Lines</th>
+                <th scope="col">Total</th>
+                <th scope="col">Paid</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sale of sales(); track sale.id) {
+                <tr (click)="showReceipt(sale)" tabindex="0" (keydown.enter)="showReceipt(sale)">
+                  <td>
+                    <strong>{{ sale.invoiceNumber }}</strong>
+                    @if (sale.customerName) {
+                      <div class="muted small">{{ sale.customerName }}</div>
+                    }
+                  </td>
+                  <td class="nowrap">{{ sale.occurredAtUtc | date: 'short' }}</td>
+                  <td>{{ sale.items.length }}</td>
+                  <td class="nowrap">৳{{ sale.totalAmount }}</td>
+                  <td class="nowrap">৳{{ sale.paidAmount }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </section>
+}

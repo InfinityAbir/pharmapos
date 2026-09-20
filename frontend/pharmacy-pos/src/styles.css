@@ -45,3 +45,15 @@ a {
   outline-offset: 2px;
   border-radius: 6px;
 }
+
+/* Receipt printing: only the receipt itself reaches paper. */
+@media print {
+  .appbar,
+  .footer {
+    display: none;
+  }
+
+  body {
+    background: #fff;
+  }
+}
