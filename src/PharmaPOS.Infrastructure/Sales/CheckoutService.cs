@@ -41,7 +41,15 @@ public sealed class CheckoutService : ICheckoutService
         if (replay is not null)
         {
             var stored = await SaleReader.FindDtoAsync(_dbContext, replay.SaleId, cancellationToken);
-            return new CheckoutResult(stored!, Replayed: true);
+            if (stored is null)
+            {
+                throw new ConflictException(
+                    "sale.replay_missing",
+                    "A previous checkout is recorded under this key but its sale is missing. " +
+                    "Retry with a new idempotency key.");
+            }
+
+            return new CheckoutResult(stored, Replayed: true);
         }
 
         await EnsureCounterAsync(tenantId, cancellationToken);
@@ -51,8 +59,6 @@ public sealed class CheckoutService : ICheckoutService
 
         try
         {
-            var invoiceNumber = await NextInvoiceNumberAsync(tenantId, cancellationToken);
-
             var medicineIds = input.Items.Select(item => item.MedicineId).Distinct().ToArray();
             var medicines = await _dbContext.Medicines
                 .Where(medicine => medicineIds.Contains(medicine.Id))
@@ -70,13 +76,17 @@ public sealed class CheckoutService : ICheckoutService
             var sale = new Sale
             {
                 TenantId = tenantId,
-                InvoiceNumber = invoiceNumber,
+                InvoiceNumber = string.Empty,
                 OccurredAtUtc = DateTimeOffset.UtcNow,
                 CustomerName = Normalize(input.CustomerName),
                 CustomerPhone = Normalize(input.CustomerPhone),
                 PrescriptionReference = Normalize(input.PrescriptionReference),
                 CashierSubject = actor,
             };
+
+            // Movements are staged locally and attached after numbering so failed
+            // validations never burn an invoice number (sequences must not gap).
+            var pendingMovements = new List<InventoryMovement>();
 
             foreach (var line in input.Items)
             {
@@ -112,7 +122,7 @@ public sealed class CheckoutService : ICheckoutService
 
                     batch.Quantity -= quantity;
 
-                    _dbContext.InventoryMovements.Add(new InventoryMovement
+                    pendingMovements.Add(new InventoryMovement
                     {
                         TenantId = tenantId,
                         MedicineId = medicine.Id,
@@ -120,7 +130,6 @@ public sealed class CheckoutService : ICheckoutService
                         Type = MovementTypes.Sale,
                         QuantityChange = -quantity,
                         QuantityAfter = batch.Quantity,
-                        Reason = invoiceNumber,
                         ActorSubject = actor,
                         OccurredAtUtc = sale.OccurredAtUtc,
                     });
@@ -148,6 +157,15 @@ public sealed class CheckoutService : ICheckoutService
                 throw new BusinessRuleException(
                     "sale.underpaid",
                     $"Paid {paid:F4} is less than the total {total:F4}.");
+            }
+
+            var invoiceNumber = await NextInvoiceNumberAsync(tenantId, cancellationToken);
+            sale.InvoiceNumber = invoiceNumber;
+
+            foreach (var movement in pendingMovements)
+            {
+                movement.Reason = invoiceNumber;
+                _dbContext.InventoryMovements.Add(movement);
             }
 
             sale.Subtotal = subtotal;

@@ -270,6 +270,65 @@ public sealed class SalesTests : IClassFixture<PostgresFixture>, IAsyncLifetime
     }
 
     [Fact]
+    public async Task Failed_checkouts_do_not_burn_invoice_numbers()
+    {
+        Guid medicineId = await SeedMedicineAsync(TenantA, "Napa", price: 10.00m);
+        await SeedBatchAsync(TenantA, medicineId, "NP-001", quantity: 5, daysToExpiry: 400);
+
+        await using var db = _fixture.CreateAppContext(TenantA);
+        var checkout = new CheckoutService(db, new NullAccessor());
+
+        var shortfall = async () => await checkout.CheckoutAsync(
+            Input(
+                items: [new CheckoutItemInput(medicineId, 6, null, 0)],
+                payments: [new CheckoutPaymentInput("Cash", 60.00m, null)]),
+            CancellationToken.None);
+        await shortfall.Should().ThrowAsync<BusinessRuleException>();
+
+        var first = await checkout.CheckoutAsync(
+            Input(
+                items: [new CheckoutItemInput(medicineId, 2, null, 0)],
+                payments: [new CheckoutPaymentInput("Cash", 20.00m, null)]),
+            CancellationToken.None);
+
+        first.Sale.InvoiceNumber.Should().Be("INV-000001");
+    }
+
+    [Fact]
+    public async Task Today_summary_uses_the_tenant_timezone_not_utc()
+    {
+        // Frozen at 2026-01-15T19:00Z, which is 2026-01-16 01:00 in Dhaka (UTC+6, no DST).
+        var frozen = new DateTimeOffset(2026, 1, 15, 19, 0, 0, TimeSpan.Zero);
+
+        await using (var setup = _fixture.CreateAppContext(TenantA))
+        {
+            setup.PharmacyProfiles.Add(new PharmaPOS.Domain.Catalog.PharmacyProfile
+            {
+                TenantId = TenantA,
+                PharmacyName = "Alpha",
+                Currency = "BDT",
+                DefaultLanguage = "en",
+                Timezone = "Asia/Dhaka",
+            });
+
+            // 01:00 Dhaka on the 16th: counts for the 16th.
+            setup.Sales.Add(TestSale(TenantA, new DateTimeOffset(2026, 1, 15, 19, 0, 0, TimeSpan.Zero), 100.00m));
+            // 23:00 Dhaka on the 15th: belongs to the previous local day.
+            setup.Sales.Add(TestSale(TenantA, new DateTimeOffset(2026, 1, 15, 17, 0, 0, TimeSpan.Zero), 50.00m));
+
+            await setup.SaveChangesAsync();
+        }
+
+        await using var db = _fixture.CreateAppContext(TenantA);
+        var summary = await new SaleReader(db, new FrozenTimeProvider(frozen))
+            .GetTodaySummaryAsync(CancellationToken.None);
+
+        summary.Date.Should().Be(new DateOnly(2026, 1, 16));
+        summary.SaleCount.Should().Be(1);
+        summary.TotalAmount.Should().Be(100.00m);
+    }
+
+    [Fact]
     public async Task Sales_do_not_leak_across_tenants()
     {
         Guid medicineId = await SeedMedicineAsync(TenantA, "Napa", price: 10.00m);
@@ -286,7 +345,7 @@ public sealed class SalesTests : IClassFixture<PostgresFixture>, IAsyncLifetime
         }
 
         await using var beta = _fixture.CreateAppContext(TenantB);
-        var reader = new SaleReader(beta);
+        var reader = new SaleReader(beta, TimeProvider.System);
 
         (await reader.FindAsync(saleId, CancellationToken.None)).Should().BeNull();
         (await reader.ListAsync(null, null, 0, 25, CancellationToken.None)).Should().BeEmpty();
@@ -364,6 +423,24 @@ public sealed class SalesTests : IClassFixture<PostgresFixture>, IAsyncLifetime
             CustomerPhone: null,
             PrescriptionReference: null,
             IdempotencyKey: key);
+
+    private static PharmaPOS.Domain.Sales.Sale TestSale(
+        string tenantId, DateTimeOffset occurredAt, decimal total)
+        => new()
+        {
+            TenantId = tenantId,
+            InvoiceNumber = $"T-{Guid.NewGuid():N}"[..12],
+            OccurredAtUtc = occurredAt,
+            Subtotal = total,
+            DiscountAmount = 0,
+            TotalAmount = total,
+            PaidAmount = total,
+        };
+
+    private sealed class FrozenTimeProvider(DateTimeOffset frozen) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => frozen;
+    }
 
     private sealed class NullAccessor : IHttpContextAccessor
     {

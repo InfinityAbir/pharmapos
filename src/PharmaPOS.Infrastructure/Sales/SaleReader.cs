@@ -11,9 +11,13 @@ namespace PharmaPOS.Infrastructure.Sales;
 public sealed class SaleReader : ISaleReader
 {
     private readonly AppDbContext _dbContext;
+    private readonly TimeProvider _timeProvider;
 
-    public SaleReader(AppDbContext dbContext)
-        => _dbContext = dbContext;
+    public SaleReader(AppDbContext dbContext, TimeProvider timeProvider)
+    {
+        _dbContext = dbContext;
+        _timeProvider = timeProvider;
+    }
 
     public async Task<IReadOnlyList<SaleDto>> ListAsync(
         DateOnly? from,
@@ -22,17 +26,19 @@ public sealed class SaleReader : ISaleReader
         int take,
         CancellationToken cancellationToken)
     {
+        // Date filters are tenant-local days (same convention as the today summary).
+        var timezone = await ResolveTimezoneAsync(cancellationToken);
         var query = _dbContext.Sales.AsNoTracking().AsQueryable();
 
         if (from.HasValue)
         {
-            var start = from.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var start = DayStartUtc(from.Value, timezone);
             query = query.Where(sale => sale.OccurredAtUtc >= start);
         }
 
         if (to.HasValue)
         {
-            var endExclusive = to.Value.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var endExclusive = DayStartUtc(to.Value.AddDays(1), timezone);
             query = query.Where(sale => sale.OccurredAtUtc < endExclusive);
         }
 
@@ -85,9 +91,10 @@ public sealed class SaleReader : ISaleReader
 
     public async Task<TodaySalesDto> GetTodaySummaryAsync(CancellationToken cancellationToken)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-        var start = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-        var endExclusive = today.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        // "Today" is the tenant's day, not UTC: a sale at 00:30 Dhaka time belongs to the
+        // local day. An unusable timezone falls back to UTC rather than failing the dashboard.
+        var (today, start, endExclusive) =
+            await TodayBoundsAsync(_timeProvider.GetUtcNow(), cancellationToken);
 
         var sales = await _dbContext.Sales
             .AsNoTracking()
@@ -98,6 +105,61 @@ public sealed class SaleReader : ISaleReader
             Date: today,
             SaleCount: sales.Count,
             TotalAmount: sales.Sum(sale => sale.TotalAmount));
+    }
+
+    private async Task<(DateOnly Date, DateTimeOffset Start, DateTimeOffset EndExclusive)>
+        TodayBoundsAsync(DateTimeOffset utcNow, CancellationToken cancellationToken)
+    {
+        var timezone = await ResolveTimezoneAsync(cancellationToken);
+
+        try
+        {
+            var localNow = TimeZoneInfo.ConvertTime(utcNow, timezone);
+            var start = DayStartUtc(DateOnly.FromDateTime(localNow.Date), timezone);
+            var endExclusive = start.AddDays(1);
+
+            return (DateOnly.FromDateTime(localNow.Date), start, endExclusive);
+        }
+        catch (ArgumentException)
+        {
+            // DST gap/ambiguity on exotic zones: fall back to the UTC day.
+            var today = DateOnly.FromDateTime(utcNow.Date);
+            var start = new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+            return (today, start, start.AddDays(1));
+        }
+    }
+
+    private async Task<TimeZoneInfo> ResolveTimezoneAsync(CancellationToken cancellationToken)
+    {
+        var timezoneId = await _dbContext.PharmacyProfiles
+            .AsNoTracking()
+            .Select(profile => profile.Timezone)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(timezoneId))
+        {
+            return TimeZoneInfo.Utc;
+        }
+
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.Utc;
+        }
+        catch (InvalidTimeZoneException)
+        {
+            return TimeZoneInfo.Utc;
+        }
+    }
+
+    private static DateTimeOffset DayStartUtc(DateOnly date, TimeZoneInfo timezone)
+    {
+        var localMidnight = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+        var offset = timezone.GetUtcOffset(localMidnight);
+        return new DateTimeOffset(localMidnight, offset).ToUniversalTime();
     }
 
     internal static async Task<SaleDto?> FindDtoAsync(
