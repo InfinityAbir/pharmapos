@@ -2,17 +2,20 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { PERMISSIONS } from './core/auth/permissions';
 import { KeycloakService } from './core/auth/keycloak.service';
+import { LanguageService } from './core/i18n/language.service';
+import { TranslatePipe } from './core/i18n/i18n.pipes';
 import { SessionService } from './core/session/session.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App implements OnInit {
   protected readonly keycloak = inject(KeycloakService);
   protected readonly session = inject(SessionService);
+  protected readonly lang = inject(LanguageService);
   protected readonly year = new Date().getFullYear();
 
   protected readonly canReadAudit = PERMISSIONS.platformAuditRead;
@@ -40,5 +43,9 @@ export class App implements OnInit {
   protected signOut(): void {
     this.session.clear();
     void this.keycloak.logout();
+  }
+
+  protected switchLanguage(): void {
+    this.lang.toggle();
   }
 }

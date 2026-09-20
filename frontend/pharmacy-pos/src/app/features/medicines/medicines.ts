@@ -11,17 +11,21 @@ import {
   Medicine,
   MedicineInput,
 } from '../../core/http/catalog-api.service';
+import { describeApiError } from '../../core/i18n/error-message';
+import { MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 import { SessionService } from '../../core/session/session.service';
 
 @Component({
   selector: 'app-medicines',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe, MoneyPipe],
   templateUrl: './medicines.html',
   styleUrl: './medicines.css',
 })
 export class MedicinesPage implements OnInit, OnDestroy {
   private readonly api = inject(CatalogApi);
   protected readonly session = inject(SessionService);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly canManage = PERMISSIONS.tenantMedicinesManage;
   protected readonly dosageForms = DOSAGE_FORMS;
@@ -101,7 +105,7 @@ export class MedicinesPage implements OnInit, OnDestroy {
 
     const input = MedicinesPage.normalise(this.form);
     if (!input.brandName || !input.genericName || !input.strength || !input.unit) {
-      this.formError.set('Brand, generic, strength and unit are all required.');
+      this.formError.set(this.lang.t('medicines.required'));
       return;
     }
 
@@ -116,7 +120,7 @@ export class MedicinesPage implements OnInit, OnDestroy {
       this.startCreate();
       await this.reload();
     } catch (error) {
-      this.formError.set(this.describe(error, 'The medicine could not be saved.'));
+      this.formError.set(this.describe(error, 'medicines.saveFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -128,7 +132,7 @@ export class MedicinesPage implements OnInit, OnDestroy {
       await firstValueFrom(this.api.setMedicineStatus(medicine.id, isActive));
       await this.reload();
     } catch (error) {
-      this.error.set(this.describe(error, 'The medicine status could not be changed.'));
+      this.error.set(this.describe(error, 'medicines.statusFailed'));
     }
   }
 
@@ -185,7 +189,7 @@ export class MedicinesPage implements OnInit, OnDestroy {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The medicine catalog could not be loaded.');
+        this.error.set(this.lang.t('medicines.loadFailed'));
       }
     } finally {
       this.loading.set(false);
@@ -210,24 +214,23 @@ export class MedicinesPage implements OnInit, OnDestroy {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The search could not be completed.');
+        this.error.set(this.lang.t('medicines.searchFailed'));
       }
     }
   }
 
-  private describe(error: unknown, fallback: string): string {
+  private describe(error: unknown, fallbackKey: string): string {
     if (error instanceof HttpErrorResponse) {
-      const detail = (error.error as { detail?: string } | undefined)?.detail;
-      if (typeof detail === 'string' && detail.length > 0) {
-        return detail;
-      }
-      if (error.status === 409) {
-        return 'Another medicine already uses this barcode.';
-      }
-      if (error.status === 404) {
-        return 'The selected category or manufacturer no longer exists. Reload and retry.';
+      const body = (error.error ?? {}) as { code?: string };
+      if (!body.code) {
+        if (error.status === 409) {
+          return this.lang.t('medicines.conflict');
+        }
+        if (error.status === 404) {
+          return this.lang.t('medicines.referenceGone');
+        }
       }
     }
-    return fallback;
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

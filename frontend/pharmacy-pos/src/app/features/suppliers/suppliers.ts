@@ -1,17 +1,21 @@
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { describeApiError } from '../../core/i18n/error-message';
+import { TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { PurchasingApi, Supplier, SupplierInput } from '../../core/http/purchasing-api.service';
 
 @Component({
   selector: 'app-suppliers',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './suppliers.html',
   styleUrl: './suppliers.css',
 })
 export class SuppliersPage implements OnInit, OnDestroy {
   private readonly api = inject(PurchasingApi);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly suppliers = signal<readonly Supplier[]>([]);
   protected readonly loading = signal(true);
@@ -67,7 +71,7 @@ export class SuppliersPage implements OnInit, OnDestroy {
 
     const input = SuppliersPage.normalise(this.form);
     if (!input.name) {
-      this.notice.set('A supplier name is required.');
+      this.notice.set(this.lang.t('suppliers.nameRequired'));
       return;
     }
 
@@ -82,7 +86,7 @@ export class SuppliersPage implements OnInit, OnDestroy {
       this.startCreate();
       await this.reload();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The supplier could not be saved.'));
+      this.notice.set(this.describe(error, 'suppliers.saveFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -94,7 +98,7 @@ export class SuppliersPage implements OnInit, OnDestroy {
       await firstValueFrom(this.api.setSupplierStatus(supplier.id, isActive));
       await this.reload();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The supplier status could not be changed.'));
+      this.notice.set(this.describe(error, 'suppliers.statusFailed'));
     }
   }
 
@@ -104,7 +108,7 @@ export class SuppliersPage implements OnInit, OnDestroy {
       await firstValueFrom(this.api.deleteSupplier(supplier.id));
       await this.reload();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The supplier could not be deleted.'));
+      this.notice.set(this.describe(error, 'suppliers.deleteFailed'));
     }
   }
 
@@ -146,7 +150,7 @@ export class SuppliersPage implements OnInit, OnDestroy {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The supplier directory could not be loaded.');
+        this.error.set(this.lang.t('suppliers.loadFailed'));
       }
     } finally {
       this.loading.set(false);
@@ -163,21 +167,12 @@ export class SuppliersPage implements OnInit, OnDestroy {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The supplier directory could not be reloaded.');
+        this.error.set(this.lang.t('suppliers.reloadFailed'));
       }
     }
   }
 
-  private describe(error: unknown, fallback: string): string {
-    if (error instanceof HttpErrorResponse) {
-      const detail = (error.error as { detail?: string } | undefined)?.detail;
-      if (typeof detail === 'string' && detail.length > 0) {
-        return detail;
-      }
-      if (error.status === 409) {
-        return 'This supplier cannot be deleted while purchases reference it, and names must be unique.';
-      }
-    }
-    return fallback;
+  private describe(error: unknown, fallbackKey: string): string {
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

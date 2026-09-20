@@ -1,31 +1,25 @@
 @if (receipt) {
   <section class="page">
     <header class="page__head no-print">
-      <p class="eyebrow">Checkout</p>
-      <h1>Sale {{ receipt.sale.invoiceNumber }}</h1>
-      <p class="lede">Completed. A ledger row was written for every batch movement.</p>
+      <p class="eyebrow">{{ 'pos.eyebrow' | t }}</p>
+      <h1>{{ 'sales.receiptTitle' | t }} {{ receipt.sale.invoiceNumber }}</h1>
+      <p class="lede">{{ 'pos.saleDone' | t }}</p>
     </header>
     <app-receipt [receipt]="receipt" />
     <div class="row no-print">
-      <button type="button" class="button" (click)="newSale()">New sale</button>
+      <button type="button" class="button" (click)="newSale()">{{ 'pos.newSale' | t }}</button>
     </div>
   </section>
 } @else {
   <section class="page">
     <header class="page__head">
-      <p class="eyebrow">Checkout</p>
-      <h1>Point of sale</h1>
-      <p class="lede">
-        Search or scan, add to cart, take payment. Prices resolve server-side at completion —
-        shown prices are estimates. Writes are guarded by
-        <code>tenant.sales.manage</code> on the server.
-      </p>
+      <p class="eyebrow">{{ 'pos.eyebrow' | t }}</p>
+      <h1>{{ 'pos.title' | t }}</h1>
+      <p class="lede">{{ 'pos.lede' | t }}</p>
     </header>
 
     @if (forbidden()) {
-      <p class="notice" role="status">
-        Your account does not have the <code>tenant.sales.manage</code> permission.
-      </p>
+      <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'tenant.sales.manage' } }}</p>
     } @else {
       @if (error(); as message) {
         <p class="alert" role="alert">{{ message }}</p>
@@ -34,22 +28,22 @@
       <div class="pos">
         <section class="panel">
           <label>
-            Search or scan
+            {{ 'pos.searchScan' | t }}
             <input
               type="text"
               name="search"
               [(ngModel)]="search"
               (ngModelChange)="onSearchInput()"
               (keydown.enter)="onSearchEnter()"
-              placeholder="Brand, generic — or scan a barcode and press Enter"
+              [placeholder]="'pos.searchPlaceholder' | t"
               autocomplete="off"
             />
           </label>
 
           @if (searching()) {
-            <p class="muted">Searching…</p>
+            <p class="muted">{{ 'common.searching' | t }}</p>
           } @else if (results().length === 0) {
-            <p class="muted">No medicines found.</p>
+            <p class="muted">{{ 'pos.noMedicines' | t }}</p>
           } @else {
             <ul class="results">
               @for (medicine of results(); track medicine.id) {
@@ -59,7 +53,7 @@
                       <strong>{{ medicine.brandName }} {{ medicine.strength }}</strong>
                       <span class="muted small"> · {{ medicine.genericName }}</span>
                     </span>
-                    <span class="nowrap">৳{{ medicine.sellingPrice }}</span>
+                    <span class="nowrap">{{ medicine.sellingPrice | money }}</span>
                   </button>
                 </li>
               }
@@ -68,10 +62,10 @@
         </section>
 
         <section class="panel">
-          <h2>Cart ({{ cart.length }})</h2>
+          <h2>{{ 'pos.cart' | t }} ({{ cart.length }})</h2>
 
           @if (cart.length === 0) {
-            <p class="muted">The cart is empty. Add medicines from the search results.</p>
+            <p class="muted">{{ 'pos.cartEmpty' | t }}</p>
           } @else {
             <ul class="cart">
               @for (line of cart; track line.medicineId) {
@@ -82,32 +76,32 @@
                       type="button"
                       class="link link--danger"
                       (click)="removeLine(line)"
-                      aria-label="Remove line"
+                      [attr.aria-label]="'pos.removeLine' | t"
                     >
-                      Remove
+                      {{ 'common.remove' | t }}
                     </button>
                   </div>
                   <div class="line-controls">
-                    <button type="button" class="stepper" (click)="changeQty(line, -1)" aria-label="Decrease">
+                    <button type="button" class="stepper" (click)="changeQty(line, -1)" aria-label="−">
                       −
                     </button>
                     <span class="qty">{{ line.quantity }}</span>
-                    <button type="button" class="stepper" (click)="changeQty(line, 1)" aria-label="Increase">
+                    <button type="button" class="stepper" (click)="changeQty(line, 1)" aria-label="+">
                       +
                     </button>
                     <label>
-                      Batch
+                      {{ 'pos.batch' | t }}
                       <select [(ngModel)]="line.batchId" [name]="'batch-' + line.medicineId">
-                        <option value="">Auto (earliest expiry)</option>
+                        <option value="">{{ 'pos.batchAuto' | t }}</option>
                         @for (batch of line.batches; track batch.id) {
                           <option [value]="batch.id">
-                            {{ batch.batchNumber }} · {{ batch.quantity }} left
+                            {{ batch.batchNumber }} · {{ batch.quantity }} {{ 'pos.batchLeft' | t }}
                           </option>
                         }
                       </select>
                     </label>
                     <label>
-                      Discount
+                      {{ 'pos.discount' | t }}
                       <input
                         type="number"
                         [(ngModel)]="line.discount"
@@ -116,7 +110,7 @@
                         step="0.01"
                       />
                     </label>
-                    <span class="nowrap">≈ ৳{{ line.quantity * line.estimatePrice - (line.discount || 0) }}</span>
+                    <span class="nowrap">{{ line.quantity * line.estimatePrice - (line.discount || 0) | money }}</span>
                   </div>
                 </li>
               }
@@ -124,42 +118,42 @@
 
             <div class="fields">
               <label>
-                Bill discount (BDT)
+                {{ 'pos.billDiscount' | t }}
                 <input type="number" name="headerDiscount" [(ngModel)]="headerDiscount" min="0" step="0.01" />
               </label>
               @if (canUseCustomers()) {
                 <label>
-                  Link customer <span class="muted">(optional)</span>
+                  {{ 'pos.linkCustomer' | t }} <span class="muted">{{ 'common.optional' | t }}</span>
                   <input
                     type="text"
                     name="customerSearch"
                     [(ngModel)]="customerSearch"
                     (ngModelChange)="onCustomerSearchInput()"
-                    placeholder="Search name or phone…"
+                    [placeholder]="'pos.customerSearchPlaceholder' | t"
                     autocomplete="off"
                   />
                 </label>
               }
               <label>
-                Customer name <span class="muted">(optional)</span>
+                {{ 'pos.customerName' | t }} <span class="muted">{{ 'common.optional' | t }}</span>
                 <input type="text" name="customerName" [(ngModel)]="customerName" maxlength="160" autocomplete="off" />
               </label>
               <label>
-                Customer phone <span class="muted">(optional)</span>
+                {{ 'pos.customerPhone' | t }} <span class="muted">{{ 'common.optional' | t }}</span>
                 <input type="text" name="customerPhone" [(ngModel)]="customerPhone" maxlength="64" autocomplete="off" />
               </label>
               @if (canUseCustomers()) {
                 <div class="customer-link">
                   @if (selectedCustomer(); as linked) {
                     <p class="muted">
-                      Linked: <strong>{{ linked.name }}</strong>
+                      {{ 'pos.linked' | t }} <strong>{{ linked.name }}</strong>
                       <button type="button" class="link link--danger" (click)="clearCustomer()">
-                        Clear
+                        {{ 'common.clear' | t }}
                       </button>
                     </p>
                   } @else {
                     @if (customerSearching()) {
-                      <p class="muted">Searching customers…</p>
+                      <p class="muted">{{ 'pos.searchingCustomers' | t }}</p>
                     } @else if (customerResults().length > 0) {
                       <ul class="results">
                         @for (customer of customerResults(); track customer.id) {
@@ -167,22 +161,22 @@
                             <button type="button" class="result" (click)="selectCustomer(customer)">
                               <span>
                                 <strong>{{ customer.name }}</strong>
-                                <span class="muted small"> · {{ customer.phone ?? 'no phone' }}</span>
+                                <span class="muted small"> · {{ customer.phone ?? ('common.noPhone' | t) }}</span>
                               </span>
-                              <span class="nowrap">Select</span>
+                              <span class="nowrap">{{ 'common.select' | t }}</span>
                             </button>
                           </li>
                         }
                       </ul>
                     }
                     <button type="button" class="link" (click)="quickCreateCustomer()">
-                      + Quick-create customer
+                      {{ 'pos.quickCreate' | t }}
                     </button>
                   }
                 </div>
               }
               <label>
-                Prescription ref <span class="muted">(optional)</span>
+                {{ 'pos.prescriptionRef' | t }} <span class="muted">{{ 'common.optional' | t }}</span>
                 <input
                   type="text"
                   name="prescriptionReference"
@@ -193,11 +187,11 @@
               </label>
             </div>
 
-            <h3>Payment</h3>
+            <h3>{{ 'pos.payment' | t }}</h3>
             @for (row of payments; track $index; let i = $index) {
               <div class="pay">
                 <label>
-                  Method
+                  {{ 'pos.method' | t }}
                   <select [(ngModel)]="row.method" [name]="'method' + i">
                     @for (method of paymentMethods; track method) {
                       <option [value]="method">{{ method }}</option>
@@ -205,42 +199,42 @@
                   </select>
                 </label>
                 <label>
-                  Amount
+                  {{ 'pos.amount' | t }}
                   <input type="number" [(ngModel)]="row.amount" [name]="'amount' + i" min="0" step="0.01" />
                 </label>
                 <label>
-                  Reference
+                  {{ 'pos.reference' | t }}
                   <input
                     type="text"
                     [(ngModel)]="row.reference"
                     [name]="'reference' + i"
-                    placeholder="TrxID (non-cash)"
+                    [placeholder]="'pos.referencePlaceholder' | t"
                     maxlength="64"
                     autocomplete="off"
                   />
                 </label>
                 @if (payments.length > 1) {
                   <button type="button" class="link link--danger" (click)="removePayRow(i)">
-                    Remove
+                    {{ 'common.remove' | t }}
                   </button>
                 }
               </div>
             }
             @if (payments.length < 4) {
-              <button type="button" class="link" (click)="addPayRow()">+ Split payment</button>
+              <button type="button" class="link" (click)="addPayRow()">{{ 'pos.splitPayment' | t }}</button>
             }
 
             <dl class="facts">
-              <div><dt>Subtotal (est.)</dt><dd>৳{{ estimateSubtotal() }}</dd></div>
-              <div><dt>Discounts (est.)</dt><dd>৳{{ estimateLineDiscount() + (headerDiscount || 0) }}</dd></div>
+              <div><dt>{{ 'pos.subtotalEst' | t }}</dt><dd>{{ estimateSubtotal() | money }}</dd></div>
+              <div><dt>{{ 'pos.discountsEst' | t }}</dt><dd>{{ estimateLineDiscount() + (headerDiscount || 0) | money }}</dd></div>
               <div>
-                <dt>Total (est.)</dt>
-                <dd><strong>৳{{ estimateTotal() }}</strong></dd>
+                <dt>{{ 'pos.totalEst' | t }}</dt>
+                <dd><strong>{{ estimateTotal() | money }}</strong></dd>
               </div>
-              <div><dt>Paid</dt><dd>৳{{ paidTotal() }}</dd></div>
+              <div><dt>{{ 'pos.paid' | t }}</dt><dd>{{ paidTotal() | money }}</dd></div>
               <div>
-                <dt>Change due</dt>
-                <dd><strong>৳{{ changeDue() }}</strong></dd>
+                <dt>{{ 'pos.changeDue' | t }}</dt>
+                <dd><strong>{{ changeDue() | money }}</strong></dd>
               </div>
             </dl>
 
@@ -250,7 +244,11 @@
               (click)="complete()"
               [disabled]="completing() || cart.length === 0"
             >
-              {{ completing() ? 'Completing…' : 'Complete sale · ৳' + estimateTotal() }}
+              @if (completing()) {
+                {{ 'pos.completing' | t }}
+              } @else {
+                {{ 'pos.completeSale' | t }} · {{ estimateTotal() | money }}
+              }
             </button>
           }
         </section>

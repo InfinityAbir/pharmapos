@@ -1,5 +1,4 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { PERMISSIONS } from '../../core/auth/permissions';
 import { KeycloakService } from '../../core/auth/keycloak.service';
@@ -9,11 +8,13 @@ import { PlatformApi, PlatformInfo } from '../../core/http/platform-api.service'
 import { PurchasingApi, PurchasingSummary } from '../../core/http/purchasing-api.service';
 import { ProductPerformanceRow, ReportsApi } from '../../core/http/reports-api.service';
 import { Sale, SalesApi, TodaySales } from '../../core/http/sales-api.service';
+import { LDateTimePipe, MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 import { SessionService } from '../../core/session/session.service';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DatePipe],
+  imports: [TranslatePipe, MoneyPipe, LDateTimePipe],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -26,6 +27,7 @@ export class Dashboard implements OnInit {
   private readonly reports = inject(ReportsApi);
   private readonly keycloak = inject(KeycloakService);
   protected readonly session = inject(SessionService);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly isAuthenticated = this.keycloak.isAuthenticated;
   protected readonly info = signal<PlatformInfo | undefined>(undefined);
@@ -92,7 +94,7 @@ export class Dashboard implements OnInit {
         }
       }
     } catch {
-      this.error.set('The PharmaPOS API could not be reached.');
+      this.error.set(this.lang.t('dashboard.apiUnreachableError'));
     } finally {
       this.loading.set(false);
     }

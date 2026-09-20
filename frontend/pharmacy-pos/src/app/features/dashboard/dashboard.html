@@ -1,11 +1,9 @@
 <section class="page">
   <header class="page__head">
     <div>
-      <p class="eyebrow">Platform</p>
-      <h1>Operations overview</h1>
-      <p class="lede">
-        Session, tenant and tenant-isolation status for this PharmaPOS environment.
-      </p>
+      <p class="eyebrow">{{ 'dashboard.eyebrow' | t }}</p>
+      <h1>{{ 'dashboard.title' | t }}</h1>
+      <p class="lede">{{ 'dashboard.lede' | t }}</p>
     </div>
     <span
       class="status"
@@ -14,9 +12,9 @@
       [class.status--idle]="loading()"
     >
       @if (loading()) {
-        Checking…
+        {{ 'dashboard.checking' | t }}
       } @else if (error()) {
-        API unreachable
+        {{ 'dashboard.apiUnreachable' | t }}
       } @else {
         API {{ info()?.status }}
       }
@@ -29,95 +27,92 @@
 
   <div class="grid">
     <article class="card">
-      <h2>API</h2>
+      <h2>{{ 'dashboard.api' | t }}</h2>
       @if (info(); as api) {
         <dl class="facts">
-          <div><dt>Name</dt><dd>{{ api.name }}</dd></div>
-          <div><dt>Version</dt><dd>{{ api.version }}</dd></div>
-          <div><dt>Environment</dt><dd>{{ api.environment }}</dd></div>
+          <div><dt>{{ 'dashboard.name' | t }}</dt><dd>{{ api.name }}</dd></div>
+          <div><dt>{{ 'dashboard.version' | t }}</dt><dd>{{ api.version }}</dd></div>
+          <div><dt>{{ 'dashboard.environment' | t }}</dt><dd>{{ api.environment }}</dd></div>
           <div>
-            <dt>Server time (UTC)</dt>
-            <dd>{{ api.serverTimeUtc | date: 'medium' }}</dd>
+            <dt>{{ 'dashboard.serverTime' | t }}</dt>
+            <dd>{{ api.serverTimeUtc | ldatetime }}</dd>
           </div>
         </dl>
       } @else {
-        <p class="muted">No data yet.</p>
+        <p class="muted">{{ 'dashboard.noData' | t }}</p>
       }
     </article>
 
     <article class="card">
-      <h2>Identity</h2>
+      <h2>{{ 'dashboard.identity' | t }}</h2>
       @if (session.context(); as identity) {
         <dl class="facts">
-          <div><dt>Username</dt><dd>{{ identity.username }}</dd></div>
-          <div><dt>Email</dt><dd>{{ identity.email }}</dd></div>
-          <div>
-            <dt>Tenant</dt>
-            <dd><code>{{ identity.tenantIdentifier }}</code> · {{ identity.tenantName }}</dd>
-          </div>
-          <div><dt>Membership</dt><dd>{{ identity.membershipStatus }}</dd></div>
+          <div><dt>{{ 'dashboard.username' | t }}</dt><dd>{{ identity.username }}</dd></div>
+          <div><dt>{{ 'common.email' | t }}</dt><dd>{{ identity.email }}</dd></div>
+          <div><dt>{{ 'dashboard.tenant' | t }}</dt><dd><code>{{ identity.tenantIdentifier }}</code> · {{ identity.tenantName }}</dd></div>
+          <div><dt>{{ 'dashboard.membership' | t }}</dt><dd>{{ identity.membershipStatus }}</dd></div>
         </dl>
       } @else if (isAuthenticated()) {
         @if (session.forbidden()) {
-          <p class="muted">This account has no active membership in the current tenant.</p>
+          <p class="muted">{{ 'dashboard.noMembership' | t }}</p>
         } @else {
-          <p class="muted">Loading identity…</p>
+          <p class="muted">{{ 'dashboard.loadingIdentity' | t }}</p>
         }
       } @else {
-        <p class="muted">Sign in to establish a session.</p>
-        <button type="button" class="button" (click)="signIn()">Sign in with Keycloak</button>
+        <p class="muted">{{ 'dashboard.signInPrompt' | t }}</p>
+        <button type="button" class="button" (click)="signIn()">{{ 'dashboard.signInKeycloak' | t }}</button>
       }
     </article>
 
     @if (canReadCatalog() && summary(); as catalog) {
       <article class="card">
-        <h2>Catalog</h2>
+        <h2>{{ 'dashboard.catalog' | t }}</h2>
         <dl class="facts">
-          <div><dt>Medicines</dt><dd>{{ catalog.medicineCount }} ({{ catalog.activeMedicineCount }} active)</dd></div>
-          <div><dt>Categories</dt><dd>{{ catalog.categoryCount }}</dd></div>
-          <div><dt>Manufacturers</dt><dd>{{ catalog.manufacturerCount }}</dd></div>
+          <div><dt>{{ 'dashboard.medicines' | t }}</dt><dd>{{ catalog.medicineCount }} ({{ catalog.activeMedicineCount }} {{ 'dashboard.activeSuffix' | t }})</dd></div>
+          <div><dt>{{ 'dashboard.categories' | t }}</dt><dd>{{ catalog.categoryCount }}</dd></div>
+          <div><dt>{{ 'dashboard.manufacturers' | t }}</dt><dd>{{ catalog.manufacturerCount }}</dd></div>
         </dl>
       </article>
     }
 
     @if (canReadInventory() && alerts(); as stock) {
       <article class="card">
-        <h2>Inventory alerts</h2>
+        <h2>{{ 'dashboard.inventoryAlerts' | t }}</h2>
         <dl class="facts">
-          <div><dt>Low stock</dt><dd>{{ stock.lowStockCount }} medicines</dd></div>
-          <div><dt>Expiring ≤ 30 days</dt><dd>{{ stock.expiringWithin30DaysCount }} batches</dd></div>
-          <div><dt>Expired in stock</dt><dd>{{ stock.expiredBatchCount }} batches</dd></div>
+          <div><dt>{{ 'dashboard.lowStock' | t }}</dt><dd>{{ stock.lowStockCount }} {{ 'dashboard.medicinesSuffix' | t }}</dd></div>
+          <div><dt>{{ 'dashboard.expiring' | t }}</dt><dd>{{ stock.expiringWithin30DaysCount }} {{ 'dashboard.batchesSuffix' | t }}</dd></div>
+          <div><dt>{{ 'dashboard.expiredStock' | t }}</dt><dd>{{ stock.expiredBatchCount }} {{ 'dashboard.batchesSuffix' | t }}</dd></div>
         </dl>
       </article>
     }
 
     @if (canReadPurchasing() && purchasingSummary(); as buying) {
       <article class="card">
-        <h2>Purchasing</h2>
+        <h2>{{ 'dashboard.purchasing' | t }}</h2>
         <dl class="facts">
-          <div><dt>Open drafts</dt><dd>{{ buying.draftCount }}</dd></div>
-          <div><dt>Received this month</dt><dd>{{ buying.receivedThisMonthCount }}</dd></div>
-          <div><dt>Month total</dt><dd>৳{{ buying.receivedThisMonthTotal }}</dd></div>
+          <div><dt>{{ 'dashboard.openDrafts' | t }}</dt><dd>{{ buying.draftCount }}</dd></div>
+          <div><dt>{{ 'dashboard.receivedMonth' | t }}</dt><dd>{{ buying.receivedThisMonthCount }}</dd></div>
+          <div><dt>{{ 'dashboard.monthTotal' | t }}</dt><dd>{{ buying.receivedThisMonthTotal | money }}</dd></div>
         </dl>
       </article>
     }
 
     @if (canReadSales() && todaySales(); as today) {
       <article class="card">
-        <h2>Today's sales</h2>
+        <h2>{{ 'dashboard.todaySales' | t }}</h2>
         <dl class="facts">
-          <div><dt>Transactions</dt><dd>{{ today.saleCount }}</dd></div>
-          <div><dt>Revenue</dt><dd>৳{{ today.totalAmount }}</dd></div>
+          <div><dt>{{ 'dashboard.transactions' | t }}</dt><dd>{{ today.saleCount }}</dd></div>
+          <div><dt>{{ 'dashboard.revenue' | t }}</dt><dd>{{ today.totalAmount | money }}</dd></div>
         </dl>
       </article>
     }
 
     @if (canReadSales() && topSellers().length > 0) {
       <article class="card">
-        <h2>Top sellers (30 days)</h2>
+        <h2>{{ 'dashboard.topSellers' | t }}</h2>
         <dl class="facts">
           @for (row of topSellers(); track row.medicineId) {
-            <div><dt>{{ row.medicineName }}</dt><dd>{{ row.quantitySold }} · ৳{{ row.revenue }}</dd></div>
+            <div><dt>{{ row.medicineName }}</dt><dd>{{ row.quantitySold }} · {{ row.revenue | money }}</dd></div>
           }
         </dl>
       </article>
@@ -125,17 +120,17 @@
 
     @if (canReadSales() && recentSales().length > 0) {
       <article class="card">
-        <h2>Recent sales</h2>
+        <h2>{{ 'dashboard.recentSales' | t }}</h2>
         <dl class="facts">
           @for (sale of recentSales().slice(0, 5); track sale.id) {
-            <div><dt>{{ sale.invoiceNumber }}</dt><dd>৳{{ sale.totalAmount }}</dd></div>
+            <div><dt>{{ sale.invoiceNumber }}</dt><dd>{{ sale.totalAmount | money }}</dd></div>
           }
         </dl>
       </article>
     }
 
     <article class="card">
-      <h2>Roles</h2>
+      <h2>{{ 'dashboard.roles' | t }}</h2>
       @if (session.context()?.roles?.length) {
         <ul class="chips">
           @for (role of session.context()!.roles; track role) {
@@ -143,27 +138,25 @@
           }
         </ul>
       } @else if (isAuthenticated()) {
-        <p class="muted">No roles are assigned to this account.</p>
+        <p class="muted">{{ 'dashboard.noRoles' | t }}</p>
       } @else {
-        <p class="muted">Roles appear once signed in.</p>
+        <p class="muted">{{ 'dashboard.rolesHint' | t }}</p>
       }
     </article>
 
     <article class="card card--wide">
-      <h2>Permissions</h2>
+      <h2>{{ 'dashboard.permissions' | t }}</h2>
       @if (session.context()?.permissions?.length) {
         <ul class="chips">
           @for (permission of session.context()!.permissions; track permission) {
             <li class="chip">{{ permission }}</li>
           }
         </ul>
-        <p class="muted small">
-          Resolved server-side from your tenant membership; the API re-checks every request.
-        </p>
+        <p class="muted small">{{ 'dashboard.permissionsHint' | t }}</p>
       } @else if (isAuthenticated()) {
-        <p class="muted">No permissions are granted to this account.</p>
+        <p class="muted">{{ 'dashboard.noPermissions' | t }}</p>
       } @else {
-        <p class="muted">Permissions appear once signed in.</p>
+        <p class="muted">{{ 'dashboard.permissionsHintSignedOut' | t }}</p>
       }
     </article>
   </div>

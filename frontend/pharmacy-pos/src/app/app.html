@@ -4,69 +4,78 @@
       <span class="brand__mark" aria-hidden="true">Rx</span>
       <span class="brand__text">
         <strong>PharmaPOS</strong>
-        <small>Pharmacy operations</small>
+        <small>{{ 'app.tagline' | t }}</small>
       </span>
     </a>
 
     <nav class="nav" aria-label="Primary">
       @if (keycloak.isAuthenticated()) {
-        <a routerLink="/dashboard" routerLinkActive="is-active">Dashboard</a>
+        <a routerLink="/dashboard" routerLinkActive="is-active">{{ 'nav.dashboard' | t }}</a>
         @if (session.hasPermission(canReadAudit)) {
-          <a routerLink="/audit" routerLinkActive="is-active">Audit log</a>
+          <a routerLink="/audit" routerLinkActive="is-active">{{ 'nav.audit' | t }}</a>
         }
         @if (session.hasPermission(canManageTenants)) {
-          <a routerLink="/tenants" routerLinkActive="is-active">Tenants</a>
+          <a routerLink="/tenants" routerLinkActive="is-active">{{ 'nav.tenants' | t }}</a>
         }
         @if (session.hasPermission(canManageMembers)) {
-          <a routerLink="/team" routerLinkActive="is-active">Team</a>
+          <a routerLink="/team" routerLinkActive="is-active">{{ 'nav.team' | t }}</a>
         }
         @if (session.hasPermission(canManageRoles)) {
-          <a routerLink="/roles" routerLinkActive="is-active">Roles</a>
+          <a routerLink="/roles" routerLinkActive="is-active">{{ 'nav.roles' | t }}</a>
         }
         @if (session.hasPermission(canReadMedicines)) {
-          <a routerLink="/medicines" routerLinkActive="is-active">Medicines</a>
-          <a routerLink="/pharmacy-profile" routerLinkActive="is-active">Pharmacy</a>
+          <a routerLink="/medicines" routerLinkActive="is-active">{{ 'nav.medicines' | t }}</a>
+          <a routerLink="/pharmacy-profile" routerLinkActive="is-active">{{ 'nav.pharmacy' | t }}</a>
         }
         @if (session.hasPermission(canManageMedicines)) {
-          <a routerLink="/catalog-data" routerLinkActive="is-active">Catalog data</a>
+          <a routerLink="/catalog-data" routerLinkActive="is-active">{{ 'nav.catalogData' | t }}</a>
         }
         @if (session.hasPermission(canReadInventory)) {
-          <a routerLink="/inventory" routerLinkActive="is-active">Inventory</a>
+          <a routerLink="/inventory" routerLinkActive="is-active">{{ 'nav.inventory' | t }}</a>
         }
         @if (session.hasPermission(canReadPurchasing)) {
-          <a routerLink="/suppliers" routerLinkActive="is-active">Suppliers</a>
-          <a routerLink="/purchases" routerLinkActive="is-active">Purchases</a>
+          <a routerLink="/suppliers" routerLinkActive="is-active">{{ 'nav.suppliers' | t }}</a>
+          <a routerLink="/purchases" routerLinkActive="is-active">{{ 'nav.purchases' | t }}</a>
         }
         @if (session.hasPermission(canManageSales)) {
-          <a routerLink="/pos" routerLinkActive="is-active">POS</a>
+          <a routerLink="/pos" routerLinkActive="is-active">{{ 'nav.pos' | t }}</a>
         }
         @if (session.hasPermission(canReadSales)) {
-          <a routerLink="/sales" routerLinkActive="is-active">Sales</a>
+          <a routerLink="/sales" routerLinkActive="is-active">{{ 'nav.sales' | t }}</a>
         }
         @if (session.hasPermission(canReadCustomers)) {
-          <a routerLink="/customers" routerLinkActive="is-active">Customers</a>
+          <a routerLink="/customers" routerLinkActive="is-active">{{ 'nav.customers' | t }}</a>
         }
         @if (
           session.hasPermission(canReadSales) ||
           session.hasPermission(canReadInventory) ||
           session.hasPermission(canReadPurchasing)
         ) {
-          <a routerLink="/reports" routerLinkActive="is-active">Reports</a>
+          <a routerLink="/reports" routerLinkActive="is-active">{{ 'nav.reports' | t }}</a>
         }
       }
     </nav>
 
     <div class="session">
+      <button
+        type="button"
+        class="button button--ghost"
+        (click)="switchLanguage()"
+        [title]="'lang.label' | t"
+        [attr.aria-label]="'lang.label' | t"
+      >
+        {{ lang.language() === 'en' ? ('lang.switchToBangla' | t) : ('lang.switchToEnglish' | t) }}
+      </button>
       @if (keycloak.isAuthenticated()) {
         <span class="session__user" [title]="keycloak.email() ?? ''">
-          {{ keycloak.username() ?? 'signed in' }}
+          {{ keycloak.username() ?? ('app.signedInFallback' | t) }}
         </span>
         @if (keycloak.tenantId(); as tenant) {
           <span class="session__tenant">{{ tenant }}</span>
         }
-        <button type="button" class="button button--ghost" (click)="signOut()">Sign out</button>
+        <button type="button" class="button button--ghost" (click)="signOut()">{{ 'app.signOut' | t }}</button>
       } @else {
-        <button type="button" class="button" (click)="signIn()">Sign in</button>
+        <button type="button" class="button" (click)="signIn()">{{ 'app.signIn' | t }}</button>
       }
     </div>
   </div>
@@ -77,6 +86,6 @@
 </main>
 
 <footer class="footer">
-  <span>PharmaPOS · Phase 1 identity &amp; tenancy</span>
+  <span>{{ 'app.footer' | t }}</span>
   <span>{{ year }}</span>
 </footer>

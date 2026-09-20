@@ -1,19 +1,14 @@
 <section class="page">
   <header class="page__head">
-    <p class="eyebrow">Catalog</p>
-    <h1>Categories &amp; manufacturers</h1>
-    <p class="lede">
-      Reference data for the medicine catalog. Deletion is refused while medicines reference a
-      row. Guarded by <code>tenant.medicines.manage</code> on the server.
-    </p>
+    <p class="eyebrow">{{ 'catalog.eyebrow' | t }}</p>
+    <h1>{{ 'catalog.title' | t }}</h1>
+    <p class="lede">{{ 'catalog.lede' | t }}</p>
   </header>
 
   @if (loading()) {
-    <p class="muted">Loading…</p>
+    <p class="muted">{{ 'common.loading' | t }}</p>
   } @else if (forbidden()) {
-    <p class="notice" role="status">
-      Your account does not have the <code>tenant.medicines.manage</code> permission.
-    </p>
+    <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'tenant.medicines.manage' } }}</p>
   } @else {
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
@@ -24,37 +19,37 @@
 
     <div class="grid">
       <section class="panel">
-        <h2>Categories</h2>
+        <h2>{{ 'catalog.categories' | t }}</h2>
         <form class="inline" (ngSubmit)="saveCategory()">
           <input
             type="text"
             name="categoryName"
             [(ngModel)]="categoryName"
-            placeholder="e.g. Analgesic"
+            [placeholder]="'catalog.categoryPlaceholder' | t"
             maxlength="100"
             autocomplete="off"
-            aria-label="Category name"
+            [attr.aria-label]="'catalog.categoryAria' | t"
           />
           <input
             type="text"
             name="categoryDescription"
             [(ngModel)]="categoryDescription"
-            placeholder="Description (optional)"
+            [placeholder]="'catalog.categoryDescPlaceholder' | t"
             maxlength="256"
             autocomplete="off"
-            aria-label="Category description"
+            [attr.aria-label]="'catalog.categoryDescAria' | t"
           />
           <button type="submit" class="button button--small">
-            {{ editingCategoryId ? 'Save' : 'Add' }}
+            {{ editingCategoryId ? ('common.save' | t) : ('common.add' | t) }}
           </button>
           @if (editingCategoryId) {
             <button type="button" class="button button--small button--ghost" (click)="cancelEditCategory()">
-              Cancel
+              {{ 'common.cancel' | t }}
             </button>
           }
         </form>
         @if (categories().length === 0) {
-          <p class="muted">No categories yet.</p>
+          <p class="muted">{{ 'catalog.noCategories' | t }}</p>
         } @else {
           <ul class="rows">
             @for (category of categories(); track category.id) {
@@ -66,9 +61,9 @@
                   }
                 </span>
                 <span class="row-actions">
-                  <button type="button" class="link" (click)="startEditCategory(category)">Edit</button>
+                  <button type="button" class="link" (click)="startEditCategory(category)">{{ 'common.edit' | t }}</button>
                   <button type="button" class="link link--danger" (click)="removeCategory(category)">
-                    Delete
+                    {{ 'common.delete' | t }}
                   </button>
                 </span>
               </li>
@@ -78,28 +73,28 @@
       </section>
 
       <section class="panel">
-        <h2>Manufacturers</h2>
+        <h2>{{ 'catalog.manufacturers' | t }}</h2>
         <form class="inline" (ngSubmit)="saveManufacturer()">
           <input
             type="text"
             name="manufacturerName"
             [(ngModel)]="manufacturerName"
-            placeholder="e.g. Square Pharmaceuticals"
+            [placeholder]="'catalog.manufacturerPlaceholder' | t"
             maxlength="128"
             autocomplete="off"
-            aria-label="Manufacturer name"
+            [attr.aria-label]="'catalog.manufacturerAria' | t"
           />
           <input
             type="text"
             name="manufacturerCountry"
             [(ngModel)]="manufacturerCountry"
-            placeholder="Country (optional)"
+            [placeholder]="'catalog.manufacturerCountryPlaceholder' | t"
             maxlength="64"
             autocomplete="off"
-            aria-label="Manufacturer country"
+            [attr.aria-label]="'catalog.manufacturerCountryAria' | t"
           />
           <button type="submit" class="button button--small">
-            {{ editingManufacturerId ? 'Save' : 'Add' }}
+            {{ editingManufacturerId ? ('common.save' | t) : ('common.add' | t) }}
           </button>
           @if (editingManufacturerId) {
             <button
@@ -107,12 +102,12 @@
               class="button button--small button--ghost"
               (click)="cancelEditManufacturer()"
             >
-              Cancel
+              {{ 'common.cancel' | t }}
             </button>
           }
         </form>
         @if (manufacturers().length === 0) {
-          <p class="muted">No manufacturers yet.</p>
+          <p class="muted">{{ 'catalog.noManufacturers' | t }}</p>
         } @else {
           <ul class="rows">
             @for (manufacturer of manufacturers(); track manufacturer.id) {
@@ -125,14 +120,14 @@
                 </span>
                 <span class="row-actions">
                   <button type="button" class="link" (click)="startEditManufacturer(manufacturer)">
-                    Edit
+                    {{ 'common.edit' | t }}
                   </button>
                   <button
                     type="button"
                     class="link link--danger"
                     (click)="removeManufacturer(manufacturer)"
                   >
-                    Delete
+                    {{ 'common.delete' | t }}
                   </button>
                 </span>
               </li>

@@ -1,45 +1,40 @@
 <section class="page">
   <header class="page__head">
-    <p class="eyebrow">Platform</p>
-    <h1>Tenants</h1>
-    <p class="lede">
-      Platform-wide tenant directory. Creating or suspending a tenant is guarded by
-      <code>platform.tenants.manage</code> on the server.
-    </p>
+    <p class="eyebrow">{{ 'tenants.eyebrow' | t }}</p>
+    <h1>{{ 'tenants.title' | t }}</h1>
+    <p class="lede">{{ 'tenants.lede' | t }}</p>
   </header>
 
   @if (loading()) {
-    <p class="muted">Loading…</p>
+    <p class="muted">{{ 'common.loading' | t }}</p>
   } @else if (forbidden()) {
-    <p class="notice" role="status">
-      Your account does not have the <code>platform.tenants.manage</code> permission.
-    </p>
+    <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'platform.tenants.manage' } }}</p>
   } @else {
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
     }
 
     <form class="panel" (ngSubmit)="create()">
-      <h2>New tenant</h2>
+      <h2>{{ 'tenants.newTenant' | t }}</h2>
       <div class="fields">
         <label>
-          Identifier
+          {{ 'tenants.identifier' | t }}
           <input
             type="text"
             name="identifier"
             [(ngModel)]="identifier"
-            placeholder="green-life-pharmacy"
+            [placeholder]="'tenants.identifierPlaceholder' | t"
             autocomplete="off"
             maxlength="64"
           />
         </label>
         <label>
-          Name
+          {{ 'common.name' | t }}
           <input
             type="text"
             name="name"
             [(ngModel)]="name"
-            placeholder="Green Life Pharmacy"
+            [placeholder]="'tenants.namePlaceholder' | t"
             autocomplete="off"
             maxlength="160"
           />
@@ -49,21 +44,21 @@
         <p class="alert" role="alert">{{ message }}</p>
       }
       <button type="submit" class="button" [disabled]="saving()">
-        {{ saving() ? 'Creating…' : 'Create tenant' }}
+        {{ saving() ? ('tenants.creating' | t) : ('tenants.createTenant' | t) }}
       </button>
     </form>
 
     @if (tenants().length === 0) {
-      <p class="muted">No tenants registered yet.</p>
+      <p class="muted">{{ 'tenants.noTenants' | t }}</p>
     } @else {
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th scope="col">Identifier</th>
-              <th scope="col">Name</th>
-              <th scope="col">Status</th>
-              <th scope="col"><span class="sr-only">Actions</span></th>
+              <th scope="col">{{ 'tenants.identifier' | t }}</th>
+              <th scope="col">{{ 'common.name' | t }}</th>
+              <th scope="col">{{ 'common.status' | t }}</th>
+              <th scope="col"><span class="sr-only">{{ 'common.actions' | t }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -79,11 +74,11 @@
                 <td class="actions">
                   @if (tenant.status === 'Active') {
                     <button type="button" class="button button--small" (click)="setStatus(tenant, 'Suspended')">
-                      Suspend
+                      {{ 'tenants.suspend' | t }}
                     </button>
                   } @else {
                     <button type="button" class="button button--small" (click)="setStatus(tenant, 'Active')">
-                      Reactivate
+                      {{ 'tenants.reactivate' | t }}
                     </button>
                   }
                 </td>

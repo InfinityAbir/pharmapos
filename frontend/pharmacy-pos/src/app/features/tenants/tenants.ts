@@ -3,15 +3,19 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Tenant, TenancyApi } from '../../core/http/tenancy-api.service';
+import { describeApiError } from '../../core/i18n/error-message';
+import { TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 
 @Component({
   selector: 'app-tenants',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './tenants.html',
   styleUrl: './tenants.css',
 })
 export class TenantsPage implements OnInit {
   private readonly api = inject(TenancyApi);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly tenants = signal<readonly Tenant[]>([]);
   protected readonly loading = signal(true);
@@ -33,7 +37,7 @@ export class TenantsPage implements OnInit {
     const identifier = this.identifier.trim().toLowerCase();
     const name = this.name.trim();
     if (!identifier || !name) {
-      this.formError.set('Identifier and name are both required.');
+      this.formError.set(this.lang.t('tenants.required'));
       return;
     }
 
@@ -44,7 +48,7 @@ export class TenantsPage implements OnInit {
       this.name = '';
       await this.load();
     } catch (error) {
-      this.formError.set(this.describe(error, 'The tenant could not be created.'));
+      this.formError.set(this.describe(error, 'tenants.createFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -56,7 +60,7 @@ export class TenantsPage implements OnInit {
       await firstValueFrom(this.api.setTenantStatus(tenant.identifier, status));
       await this.load();
     } catch (error) {
-      this.error.set(this.describe(error, 'The tenant status could not be changed.'));
+      this.error.set(this.describe(error, 'tenants.statusFailed'));
     }
   }
 
@@ -71,23 +75,20 @@ export class TenantsPage implements OnInit {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The tenant directory could not be loaded.');
+        this.error.set(this.lang.t('tenants.loadFailed'));
       }
     } finally {
       this.loading.set(false);
     }
   }
 
-  private describe(error: unknown, fallback: string): string {
+  private describe(error: unknown, fallbackKey: string): string {
     if (error instanceof HttpErrorResponse) {
-      const detail = (error.error as { detail?: string } | undefined)?.detail;
-      if (typeof detail === 'string' && detail.length > 0) {
-        return detail;
-      }
-      if (error.status === 409) {
-        return 'A tenant with this identifier already exists.';
+      const body = (error.error ?? {}) as { code?: string };
+      if (!body.code && error.status === 409) {
+        return this.lang.t('tenants.identifierConflict');
       }
     }
-    return fallback;
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

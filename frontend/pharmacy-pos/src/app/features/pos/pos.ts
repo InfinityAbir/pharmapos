@@ -12,6 +12,9 @@ import {
   SalesApi,
 } from '../../core/http/sales-api.service';
 import { Customer, CustomersApi } from '../../core/http/customers-api.service';
+import { describeApiError } from '../../core/i18n/error-message';
+import { MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 import { SessionService } from '../../core/session/session.service';
 import { ReceiptView } from '../sales/receipt';
 
@@ -45,7 +48,7 @@ function newIdempotencyKey(): string {
 
 @Component({
   selector: 'app-pos',
-  imports: [FormsModule, ReceiptView],
+  imports: [FormsModule, ReceiptView, TranslatePipe, MoneyPipe],
   templateUrl: './pos.html',
   styleUrl: './pos.css',
 })
@@ -55,6 +58,7 @@ export class PosPage implements OnInit, OnDestroy {
   private readonly inventory = inject(InventoryApi);
   private readonly customers = inject(CustomersApi);
   protected readonly session = inject(SessionService);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly canManage = PERMISSIONS.tenantSalesManage;
   protected readonly paymentMethods = PAYMENT_METHODS;
@@ -146,7 +150,7 @@ export class PosPage implements OnInit, OnDestroy {
     this.error.set(undefined);
     const name = this.customerName.trim() || this.customerSearch.trim();
     if (!name) {
-      this.error.set('Enter a customer name to create.');
+      this.error.set(this.lang.t('pos.customerNameRequired'));
       return;
     }
     try {
@@ -161,7 +165,7 @@ export class PosPage implements OnInit, OnDestroy {
       );
       this.selectCustomer(created);
     } catch (error) {
-      this.error.set(this.describe(error, 'The customer could not be created.'));
+      this.error.set(this.describe(error, 'pos.customerCreateFailed'));
     }
   }
 
@@ -267,18 +271,18 @@ export class PosPage implements OnInit, OnDestroy {
     this.error.set(undefined);
 
     if (this.cart.length === 0) {
-      this.error.set('The cart is empty.');
+      this.error.set(this.lang.t('pos.cartEmptyError'));
       return;
     }
 
     const payments: CheckoutPaymentInput[] = [];
     for (const [index, row] of this.payments.entries()) {
       if (row.amount === null || row.amount <= 0) {
-        this.error.set(`Payment ${index + 1}: enter an amount greater than zero.`);
+        this.error.set(`Payment ${index + 1}: ${this.lang.t('pos.paymentAmountError')}`);
         return;
       }
       if (row.method !== 'Cash' && !row.reference.trim()) {
-        this.error.set(`Payment ${index + 1}: a transaction reference is required.`);
+        this.error.set(`Payment ${index + 1}: ${this.lang.t('pos.paymentReferenceError')}`);
         return;
       }
       payments.push({
@@ -310,7 +314,7 @@ export class PosPage implements OnInit, OnDestroy {
 
       this.receipt = await firstValueFrom(this.sales.getReceipt(sale.id));
     } catch (error) {
-      this.error.set(this.describe(error, 'The sale could not be completed.'));
+      this.error.set(this.describe(error, 'pos.checkoutFailed'));
     } finally {
       this.completing.set(false);
     }
@@ -354,26 +358,25 @@ export class PosPage implements OnInit, OnDestroy {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('Search could not be completed.');
+        this.error.set(this.lang.t('pos.searchFailed'));
       }
     } finally {
       this.searching.set(false);
     }
   }
 
-  private describe(error: unknown, fallback: string): string {
+  private describe(error: unknown, fallbackKey: string): string {
     if (error instanceof HttpErrorResponse) {
-      const detail = (error.error as { detail?: string } | undefined)?.detail;
-      if (typeof detail === 'string' && detail.length > 0) {
-        return detail;
-      }
-      if (error.status === 422) {
-        return 'The sale was refused by a checkout rule (see details above).';
-      }
-      if (error.status === 409) {
-        return 'Stock changed while checking out. Review the cart and retry.';
+      const body = (error.error ?? {}) as { code?: string };
+      if (!body.code) {
+        if (error.status === 422) {
+          return this.lang.t('pos.saleRefused');
+        }
+        if (error.status === 409) {
+          return this.lang.t('pos.stockChanged');
+        }
       }
     }
-    return fallback;
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

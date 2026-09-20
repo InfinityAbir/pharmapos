@@ -1,17 +1,21 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { describeApiError } from '../../core/i18n/error-message';
+import { TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Member, Role, TenancyApi } from '../../core/http/tenancy-api.service';
 
 @Component({
   selector: 'app-team',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './team.html',
   styleUrl: './team.css',
 })
 export class TeamPage implements OnInit {
   private readonly api = inject(TenancyApi);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly members = signal<readonly Member[]>([]);
   protected readonly roles = signal<readonly Role[]>([]);
@@ -66,7 +70,7 @@ export class TeamPage implements OnInit {
       this.drafts.set(member.membershipId, [...updated.roles]);
       await this.reloadMembers();
     } catch (error) {
-      this.error.set(this.describe(error, 'The member roles could not be saved.'));
+      this.error.set(this.describe(error, 'team.rolesFailed'));
     } finally {
       this.savingId.set(undefined);
     }
@@ -78,7 +82,7 @@ export class TeamPage implements OnInit {
       await firstValueFrom(this.api.setMembershipStatus(member.membershipId, status));
       await this.reloadMembers();
     } catch (error) {
-      this.error.set(this.describe(error, 'The membership status could not be changed.'));
+      this.error.set(this.describe(error, 'team.statusFailed'));
     }
   }
 
@@ -94,7 +98,7 @@ export class TeamPage implements OnInit {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The team directory could not be loaded.');
+        this.error.set(this.lang.t('team.loadFailed'));
       }
     }
 
@@ -115,20 +119,17 @@ export class TeamPage implements OnInit {
     try {
       this.members.set(await firstValueFrom(this.api.listMembers()));
     } catch (error) {
-      this.error.set('The team directory could not be reloaded.');
+        this.error.set(this.lang.t('team.reloadFailed'));
     }
   }
 
-  private describe(error: unknown, fallback: string): string {
+  private describe(error: unknown, fallbackKey: string): string {
     if (error instanceof HttpErrorResponse) {
-      const detail = (error.error as { detail?: string } | undefined)?.detail;
-      if (typeof detail === 'string' && detail.length > 0) {
-        return detail;
-      }
-      if (error.status === 404) {
-        return 'The member or one of the selected roles no longer exists.';
+      const body = (error.error ?? {}) as { code?: string };
+      if (!body.code && error.status === 404) {
+        return this.lang.t('team.referenceGone');
       }
     }
-    return fallback;
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

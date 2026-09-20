@@ -1,5 +1,4 @@
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -12,17 +11,21 @@ import {
   Movement,
   ReceiveStockInput,
 } from '../../core/http/inventory-api.service';
+import { describeApiError } from '../../core/i18n/error-message';
+import { LDatePipe, LDateTimePipe, MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 import { SessionService } from '../../core/session/session.service';
 
 @Component({
   selector: 'app-inventory',
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, TranslatePipe, MoneyPipe, LDatePipe, LDateTimePipe],
   templateUrl: './inventory.html',
   styleUrl: './inventory.css',
 })
 export class InventoryPage implements OnInit, OnDestroy {
   private readonly api = inject(InventoryApi);
   protected readonly session = inject(SessionService);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly canManage = PERMISSIONS.tenantInventoryManage;
 
@@ -104,11 +107,11 @@ export class InventoryPage implements OnInit, OnDestroy {
       purchaseReference: this.empty(this.receive.purchaseReference),
     };
     if (!input.medicineId || !input.batchNumber || !input.quantity || input.quantity < 1) {
-      this.notice.set('Medicine, batch number and a positive quantity are required.');
+      this.notice.set(this.lang.t('inventory.receiveRequired'));
       return;
     }
     if (!input.expiryDate) {
-      this.notice.set('An expiry date is required. Expired stock can never be received.');
+      this.notice.set(this.lang.t('inventory.expiryRequired'));
       return;
     }
 
@@ -117,9 +120,9 @@ export class InventoryPage implements OnInit, OnDestroy {
       await firstValueFrom(this.api.receiveStock(input));
       this.receive = { ...InventoryPage.blankReceive(), medicineId: input.medicineId };
       await this.refreshAll();
-      this.notice.set('Stock received.');
+      this.notice.set(this.lang.t('inventory.received'));
     } catch (error) {
-      this.notice.set(this.describe(error, 'The stock could not be received.'));
+      this.notice.set(this.describe(error, 'inventory.receiveFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -129,7 +132,7 @@ export class InventoryPage implements OnInit, OnDestroy {
     this.notice.set(undefined);
 
     if (this.adjustQty === null || this.adjustQty === 0 || !Number.isInteger(this.adjustQty)) {
-      this.notice.set('Enter a non-zero whole-unit quantity change.');
+      this.notice.set(this.lang.t('inventory.adjustRequired'));
       return;
     }
 
@@ -140,9 +143,9 @@ export class InventoryPage implements OnInit, OnDestroy {
       );
       this.adjustingBatchId = undefined;
       await this.refreshAll();
-      this.notice.set('Adjustment recorded.');
+      this.notice.set(this.lang.t('inventory.adjusted'));
     } catch (error) {
-      this.notice.set(this.describe(error, 'The adjustment could not be recorded.'));
+      this.notice.set(this.describe(error, 'inventory.adjustFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -155,9 +158,11 @@ export class InventoryPage implements OnInit, OnDestroy {
       await firstValueFrom(this.api.expireBatch(batch.id));
       this.adjustingBatchId = undefined;
       await this.refreshAll();
-      this.notice.set(`Batch ${batch.batchNumber} expired. ${batch.quantity} units removed.`);
+      this.notice.set(
+        this.lang.t('inventory.expiredRemoved', { batch: batch.batchNumber, qty: batch.quantity }),
+      );
     } catch (error) {
-      this.notice.set(this.describe(error, 'The batch could not be expired.'));
+      this.notice.set(this.describe(error, 'inventory.expireFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -197,7 +202,7 @@ export class InventoryPage implements OnInit, OnDestroy {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The inventory could not be loaded.');
+        this.error.set(this.lang.t('inventory.loadFailed'));
       }
     } finally {
       this.loading.set(false);
@@ -230,7 +235,7 @@ export class InventoryPage implements OnInit, OnDestroy {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The stock list could not be reloaded.');
+        this.error.set(this.lang.t('inventory.reloadFailed'));
       }
     }
   }
@@ -251,19 +256,7 @@ export class InventoryPage implements OnInit, OnDestroy {
     this.movements.set(await firstValueFrom(this.api.listMovements(this.selectedMedicineId)));
   }
 
-  private describe(error: unknown, fallback: string): string {
-    if (error instanceof HttpErrorResponse) {
-      const detail = (error.error as { detail?: string } | undefined)?.detail;
-      if (typeof detail === 'string' && detail.length > 0) {
-        return detail;
-      }
-      if (error.status === 409) {
-        return 'This batch changed while your request was processed. Reload and retry.';
-      }
-      if (error.status === 422) {
-        return 'The operation was refused by a stock rule (see details above).';
-      }
-    }
-    return fallback;
+  private describe(error: unknown, fallbackKey: string): string {
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

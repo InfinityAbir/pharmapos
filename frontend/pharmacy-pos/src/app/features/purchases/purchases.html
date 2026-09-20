@@ -1,19 +1,14 @@
 <section class="page">
   <header class="page__head">
-    <p class="eyebrow">Purchasing</p>
-    <h1>Purchases</h1>
-    <p class="lede">
-      Drafts become stock only when received — atomically and idempotently. Writes are guarded
-      by <code>tenant.purchasing.manage</code> on the server.
-    </p>
+    <p class="eyebrow">{{ 'purchases.eyebrow' | t }}</p>
+    <h1>{{ 'purchases.title' | t }}</h1>
+    <p class="lede">{{ 'purchases.lede' | t }}</p>
   </header>
 
   @if (loading()) {
-    <p class="muted">Loading…</p>
+    <p class="muted">{{ 'common.loading' | t }}</p>
   } @else if (forbidden()) {
-    <p class="notice" role="status">
-      Your account does not have the <code>tenant.purchasing.read</code> permission.
-    </p>
+    <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'tenant.purchasing.read' } }}</p>
   } @else {
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
@@ -26,47 +21,47 @@
       <div class="panel">
         <div class="fields fields--filters">
           <label>
-            Supplier
+            {{ 'purchases.supplier' | t }}
             <select name="filterSupplier" [(ngModel)]="filterSupplier" (ngModelChange)="onFilterChange()">
-              <option value="">All suppliers</option>
+              <option value="">{{ 'purchases.allSuppliers' | t }}</option>
               @for (supplier of suppliers(); track supplier.id) {
                 <option [value]="supplier.id">{{ supplier.name }}</option>
               }
             </select>
           </label>
           <label>
-            Status
+            {{ 'purchases.status' | t }}
             <select name="filterStatus" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-              <option value="">All statuses</option>
+              <option value="">{{ 'purchases.allStatuses' | t }}</option>
               <option value="Draft">Draft</option>
               <option value="Received">Received</option>
               <option value="Cancelled">Cancelled</option>
             </select>
           </label>
           @if (hasPermission(canManage)) {
-            <button type="button" class="button" (click)="startCreate()">New purchase</button>
+            <button type="button" class="button" (click)="startCreate()">{{ 'purchases.newPurchase' | t }}</button>
           }
         </div>
       </div>
 
       @if (purchases().length === 0) {
-        <p class="muted">No purchases found.</p>
+        <p class="muted">{{ 'purchases.noPurchases' | t }}</p>
       } @else {
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Supplier</th>
-                <th scope="col">Lines</th>
-                <th scope="col">Total</th>
-                <th scope="col">Status</th>
+                <th scope="col">{{ 'purchases.date' | t }}</th>
+                <th scope="col">{{ 'purchases.supplier' | t }}</th>
+                <th scope="col">{{ 'purchases.lines' | t }}</th>
+                <th scope="col">{{ 'purchases.total' | t }}</th>
+                <th scope="col">{{ 'common.status' | t }}</th>
               </tr>
             </thead>
             <tbody>
               @for (purchase of purchases(); track purchase.id) {
                 <tr (click)="showDetail(purchase)" tabindex="0" (keydown.enter)="showDetail(purchase)">
-                  <td class="nowrap">{{ purchase.purchaseDate | date: 'mediumDate' }}</td>
+                  <td class="nowrap">{{ purchase.purchaseDate | ldate }}</td>
                   <td>
                     <strong>{{ purchase.supplierName }}</strong>
                     @if (purchase.supplierInvoiceNumber) {
@@ -74,7 +69,7 @@
                     }
                   </td>
                   <td>{{ purchase.items.length }}</td>
-                  <td class="nowrap">৳{{ purchase.totalAmount }}</td>
+                  <td class="nowrap">{{ purchase.totalAmount | money }}</td>
                   <td>
                     <span
                       class="pill"
@@ -94,10 +89,10 @@
 
     @if (view === 'form' && hasPermission(canManage)) {
       <form class="panel" (ngSubmit)="saveDraft()">
-        <h2>{{ editingId ? 'Edit draft' : 'New purchase draft' }}</h2>
+        <h2>{{ editingId ? ('purchases.editDraft' | t) : ('purchases.newDraft' | t) }}</h2>
         <div class="fields">
           <label>
-            Supplier
+            {{ 'purchases.supplier' | t }}
             <select name="formSupplierId" [(ngModel)]="formSupplierId">
               <option value="">—</option>
               @for (supplier of suppliers(); track supplier.id) {
@@ -106,11 +101,11 @@
             </select>
           </label>
           <label>
-            Purchase date
+            {{ 'purchases.purchaseDate' | t }}
             <input type="date" name="formDate" [(ngModel)]="formDate" />
           </label>
           <label>
-            Supplier invoice no.
+            {{ 'purchases.supplierInvoice' | t }}
             <input
               type="text"
               name="formInvoice"
@@ -120,15 +115,15 @@
             />
           </label>
           <label>
-            Discount (BDT)
+            {{ 'purchases.discount' | t }}
             <input type="number" name="formDiscount" [(ngModel)]="formDiscount" min="0" step="0.01" />
           </label>
           <label>
-            Tax (BDT)
+            {{ 'purchases.tax' | t }}
             <input type="number" name="formTax" [(ngModel)]="formTax" min="0" step="0.01" />
           </label>
           <label>
-            Notes
+            {{ 'common.notes' | t }}
             <input
               type="text"
               name="formNotes"
@@ -139,16 +134,14 @@
           </label>
         </div>
 
-        <h3>Lines</h3>
+        <h3>{{ 'purchases.lines' | t }}</h3>
         @if (medicinesUnavailable()) {
-          <p class="notice" role="status">
-            The medicine list could not be loaded. Lines cannot be added right now.
-          </p>
+          <p class="notice" role="status">{{ 'purchases.medicinesUnavailable' | t }}</p>
         }
         @for (row of rows; track $index; let i = $index) {
           <div class="line">
             <label>
-              Medicine
+              {{ 'purchases.medicine' | t }}
               <select [(ngModel)]="row.medicineId" [name]="'medicine' + i">
                 <option value="">—</option>
                 @for (medicine of medicines(); track medicine.id) {
@@ -159,7 +152,7 @@
               </select>
             </label>
             <label>
-              Batch
+              {{ 'purchases.batch' | t }}
               <input
                 type="text"
                 [(ngModel)]="row.batchNumber"
@@ -169,15 +162,15 @@
               />
             </label>
             <label>
-              Expiry
+              {{ 'purchases.expiry' | t }}
               <input type="date" [(ngModel)]="row.expiryDate" [name]="'expiry' + i" />
             </label>
             <label>
-              Qty
+              {{ 'purchases.qty' | t }}
               <input type="number" [(ngModel)]="row.quantity" [name]="'qty' + i" min="1" step="1" />
             </label>
             <label>
-              Unit price
+              {{ 'purchases.unitPrice' | t }}
               <input
                 type="number"
                 [(ngModel)]="row.unitPrice"
@@ -187,7 +180,7 @@
               />
             </label>
             <label>
-              Discount
+              {{ 'pos.discount' | t }}
               <input
                 type="number"
                 [(ngModel)]="row.discountAmount"
@@ -201,7 +194,7 @@
               class="button button--small button--ghost"
               (click)="removeRow(i)"
               [disabled]="rows.length <= 1"
-              aria-label="Remove line"
+              [attr.aria-label]="'purchases.removeLine' | t"
             >
               ✕
             </button>
@@ -214,16 +207,16 @@
             (click)="addRow()"
             [disabled]="medicinesUnavailable()"
           >
-            + Add line
+            {{ 'purchases.addLine' | t }}
           </button>
-          <span class="total">Estimated total: ৳{{ formTotal() }}</span>
+          <span class="total">{{ 'purchases.estimatedTotal' | t }} {{ formTotal() | money }}</span>
         </div>
 
         <div class="row">
           <button type="submit" class="button" [disabled]="saving()">
-            {{ saving() ? 'Saving…' : editingId ? 'Save changes' : 'Create draft' }}
+            {{ saving() ? ('common.saving' | t) : editingId ? ('common.saveChanges' | t) : ('purchases.createDraft' | t) }}
           </button>
-          <button type="button" class="button button--ghost" (click)="backToList()">Cancel</button>
+          <button type="button" class="button button--ghost" (click)="backToList()">{{ 'common.cancel' | t }}</button>
         </div>
       </form>
     }
@@ -231,7 +224,7 @@
     @if (view === 'detail' && detail; as purchase) {
       <section class="panel">
         <h2>
-          {{ purchase.supplierName }} · {{ purchase.purchaseDate | date: 'mediumDate' }}
+          {{ purchase.supplierName }} · {{ purchase.purchaseDate | ldate }}
           <span
             class="pill"
             [class.pill--warn]="purchase.status === 'Draft'"
@@ -242,17 +235,17 @@
         </h2>
         <dl class="facts">
           @if (purchase.supplierInvoiceNumber) {
-            <div><dt>Invoice no.</dt><dd>{{ purchase.supplierInvoiceNumber }}</dd></div>
+            <div><dt>{{ 'purchases.invoiceNo' | t }}</dt><dd>{{ purchase.supplierInvoiceNumber }}</dd></div>
           }
-          <div><dt>Subtotal</dt><dd>৳{{ purchase.subtotal }}</dd></div>
-          <div><dt>Discount</dt><dd>৳{{ purchase.discountAmount }}</dd></div>
-          <div><dt>Tax</dt><dd>৳{{ purchase.taxAmount }}</dd></div>
+          <div><dt>{{ 'purchases.subtotal' | t }}</dt><dd>{{ purchase.subtotal | money }}</dd></div>
+          <div><dt>{{ 'pos.discount' | t }}</dt><dd>{{ purchase.discountAmount | money }}</dd></div>
+          <div><dt>{{ 'purchases.taxRow' | t }}</dt><dd>{{ purchase.taxAmount | money }}</dd></div>
           <div>
-            <dt>Total</dt>
-            <dd><strong>৳{{ purchase.totalAmount }}</strong></dd>
+            <dt>{{ 'purchases.total' | t }}</dt>
+            <dd><strong>{{ purchase.totalAmount | money }}</strong></dd>
           </div>
           @if (purchase.notes) {
-            <div><dt>Notes</dt><dd>{{ purchase.notes }}</dd></div>
+            <div><dt>{{ 'common.notes' | t }}</dt><dd>{{ purchase.notes }}</dd></div>
           }
         </dl>
 
@@ -260,12 +253,12 @@
           <table>
             <thead>
               <tr>
-                <th scope="col">Medicine</th>
-                <th scope="col">Batch</th>
-                <th scope="col">Expiry</th>
-                <th scope="col">Qty</th>
-                <th scope="col">Unit price</th>
-                <th scope="col">Line total</th>
+                <th scope="col">{{ 'purchases.medicine' | t }}</th>
+                <th scope="col">{{ 'purchases.batch' | t }}</th>
+                <th scope="col">{{ 'purchases.expiry' | t }}</th>
+                <th scope="col">{{ 'purchases.qty' | t }}</th>
+                <th scope="col">{{ 'purchases.unitPrice' | t }}</th>
+                <th scope="col">{{ 'purchases.lineTotal' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -273,10 +266,10 @@
                 <tr>
                   <td>{{ item.medicineName }}</td>
                   <td><code>{{ item.batchNumber }}</code></td>
-                  <td class="nowrap">{{ item.expiryDate | date: 'mediumDate' }}</td>
+                  <td class="nowrap">{{ item.expiryDate | ldate }}</td>
                   <td>{{ item.quantity }}</td>
-                  <td class="nowrap">৳{{ item.unitPrice }}</td>
-                  <td class="nowrap">৳{{ item.lineTotal }}</td>
+                  <td class="nowrap">{{ item.unitPrice | money }}</td>
+                  <td class="nowrap">{{ item.lineTotal | money }}</td>
                 </tr>
               }
             </tbody>
@@ -284,10 +277,10 @@
         </div>
 
         <div class="row">
-          <button type="button" class="button button--ghost" (click)="backToList()">Back</button>
+          <button type="button" class="button button--ghost" (click)="backToList()">{{ 'common.back' | t }}</button>
           @if (purchase.status === 'Draft' && hasPermission(canManage)) {
             <button type="button" class="button button--ghost" (click)="startEdit(purchase)">
-              Edit
+              {{ 'common.edit' | t }}
             </button>
             <button
               type="button"
@@ -295,7 +288,7 @@
               (click)="receive(purchase)"
               [disabled]="saving()"
             >
-              {{ saving() ? 'Receiving…' : 'Receive stock' }}
+              {{ saving() ? ('purchases.receiving' | t) : ('purchases.receiveStock' | t) }}
             </button>
             <button
               type="button"
@@ -303,7 +296,7 @@
               (click)="cancel(purchase)"
               [disabled]="saving()"
             >
-              Cancel purchase
+              {{ 'purchases.cancelPurchase' | t }}
             </button>
           }
         </div>

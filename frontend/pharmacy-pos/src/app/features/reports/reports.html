@@ -1,33 +1,30 @@
 <section class="page">
   <header class="page__head">
-    <p class="eyebrow">Insights</p>
-    <h1>Reports</h1>
-    <p class="lede">
-      Server-side aggregates only — every figure below was grouped and summed in PostgreSQL
-      over your tenant's data. The browser renders results; it never downloads raw ledgers.
-    </p>
+    <p class="eyebrow">{{ 'reports.eyebrow' | t }}</p>
+    <h1>{{ 'reports.title' | t }}</h1>
+    <p class="lede">{{ 'reports.lede' | t }}</p>
   </header>
 
   <div class="panel">
     <div class="fields fields--filters">
       <label>
-        From
+        {{ 'sales.from' | t }}
         <input type="date" name="from" [(ngModel)]="from" (ngModelChange)="onFilterChange()" />
       </label>
       <label>
-        To
+        {{ 'sales.to' | t }}
         <input type="date" name="to" [(ngModel)]="to" (ngModelChange)="onFilterChange()" />
       </label>
       <label>
-        Trend bucket
+        {{ 'reports.trendBucket' | t }}
         <select name="bucket" [(ngModel)]="bucket" (ngModelChange)="onFilterChange()">
-          <option value="day">Daily</option>
-          <option value="week">Weekly</option>
-          <option value="month">Monthly</option>
+          <option value="day">{{ 'reports.daily' | t }}</option>
+          <option value="week">{{ 'reports.weekly' | t }}</option>
+          <option value="month">{{ 'reports.monthly' | t }}</option>
         </select>
       </label>
       <label>
-        Movers window (days)
+        {{ 'reports.moversWindow' | t }}
         <input
           type="number"
           name="windowDays"
@@ -42,13 +39,9 @@
   </div>
 
   @if (loading()) {
-    <p class="muted">Loading reports…</p>
+    <p class="muted">{{ 'common.loading' | t }}</p>
   } @else if (!hasAnyReportPermission()) {
-    <p class="notice" role="status">
-      Your account has none of the report permissions
-      (<code>tenant.sales.read</code>, <code>tenant.inventory.read</code>,
-      <code>tenant.purchasing.read</code>).
-    </p>
+    <p class="notice" role="status">{{ 'reports.noPermission' | t }}</p>
   } @else {
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
@@ -56,110 +49,110 @@
 
     @if (canReadSales()) {
       <section class="panel">
-        <h2>Sales trend ({{ bucket }})</h2>
+        <h2>{{ 'reports.trend' | t }} ({{ bucketLabel() }})</h2>
         @if (trend().length === 0) {
-          <p class="muted">No sales in this period yet.</p>
+          <p class="muted">{{ 'reports.noSalesPeriod' | t }}</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th scope="col">Period</th><th scope="col">Sales</th><th scope="col">Total</th></tr>
+                <tr><th scope="col">{{ 'reports.period' | t }}</th><th scope="col">{{ 'reports.sales' | t }}</th><th scope="col">{{ 'reports.revenue' | t }}</th></tr>
               </thead>
               <tbody>
                 @for (row of trend(); track row.periodStart) {
-                  <tr><td>{{ row.periodStart }}</td><td>{{ row.saleCount }}</td><td class="nowrap">৳{{ row.totalAmount }}</td></tr>
+                  <tr><td>{{ row.periodStart | ldate }}</td><td>{{ row.saleCount }}</td><td class="nowrap">{{ row.totalAmount | money }}</td></tr>
                 }
               </tbody>
             </table>
           </div>
           <div class="row">
-            <button type="button" class="button button--small" (click)="exportCsv('sales-trend', ['periodStart', 'saleCount', 'totalAmount'], [...trend()])">Export CSV</button>
+            <button type="button" class="button button--small" (click)="exportCsv('sales-trend', ['periodStart', 'saleCount', 'totalAmount'], [...trend()])">{{ 'reports.exportCsv' | t }}</button>
           </div>
         }
       </section>
 
       <section class="panel">
-        <h2>Sales by cashier</h2>
+        <h2>{{ 'reports.byCashier' | t }}</h2>
         @if (byCashier().length === 0) {
-          <p class="muted">No sales in this period yet.</p>
+          <p class="muted">{{ 'reports.noSalesPeriod' | t }}</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th scope="col">Cashier</th><th scope="col">Sales</th><th scope="col">Total</th></tr>
+                <tr><th scope="col">{{ 'reports.cashier' | t }}</th><th scope="col">{{ 'reports.sales' | t }}</th><th scope="col">{{ 'reports.revenue' | t }}</th></tr>
               </thead>
               <tbody>
                 @for (row of byCashier(); track row.cashier) {
-                  <tr><td>{{ row.cashier }}</td><td>{{ row.saleCount }}</td><td class="nowrap">৳{{ row.totalAmount }}</td></tr>
+                  <tr><td>{{ row.cashier }}</td><td>{{ row.saleCount }}</td><td class="nowrap">{{ row.totalAmount | money }}</td></tr>
                 }
               </tbody>
             </table>
           </div>
           <div class="row">
-            <button type="button" class="button button--small" (click)="exportCsv('sales-by-cashier', ['cashier', 'saleCount', 'totalAmount'], [...byCashier()])">Export CSV</button>
+            <button type="button" class="button button--small" (click)="exportCsv('sales-by-cashier', ['cashier', 'saleCount', 'totalAmount'], [...byCashier()])">{{ 'reports.exportCsv' | t }}</button>
           </div>
         }
       </section>
 
       <section class="panel">
-        <h2>Sales by payment method</h2>
+        <h2>{{ 'reports.byMethod' | t }}</h2>
         @if (byMethod().length === 0) {
-          <p class="muted">No payments in this period yet.</p>
+          <p class="muted">{{ 'reports.noPayments' | t }}</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th scope="col">Method</th><th scope="col">Payments</th><th scope="col">Total</th></tr>
+                <tr><th scope="col">{{ 'reports.method' | t }}</th><th scope="col">{{ 'reports.payments' | t }}</th><th scope="col">{{ 'reports.revenue' | t }}</th></tr>
               </thead>
               <tbody>
                 @for (row of byMethod(); track row.method) {
-                  <tr><td>{{ row.method }}</td><td>{{ row.paymentCount }}</td><td class="nowrap">৳{{ row.totalAmount }}</td></tr>
+                  <tr><td>{{ row.method }}</td><td>{{ row.paymentCount }}</td><td class="nowrap">{{ row.totalAmount | money }}</td></tr>
                 }
               </tbody>
             </table>
           </div>
           <div class="row">
-            <button type="button" class="button button--small" (click)="exportCsv('sales-by-method', ['method', 'paymentCount', 'totalAmount'], [...byMethod()])">Export CSV</button>
+            <button type="button" class="button button--small" (click)="exportCsv('sales-by-method', ['method', 'paymentCount', 'totalAmount'], [...byMethod()])">{{ 'reports.exportCsv' | t }}</button>
           </div>
         }
       </section>
 
       <section class="panel">
-        <h2>Sales by medicine</h2>
+        <h2>{{ 'reports.byMedicine' | t }}</h2>
         @if (byMedicine().length === 0) {
-          <p class="muted">No medicine sales in this period yet.</p>
+          <p class="muted">{{ 'reports.noMedicineSales' | t }}</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th scope="col">Medicine</th><th scope="col">Qty</th><th scope="col">Revenue</th></tr>
+                <tr><th scope="col">{{ 'reports.medicine' | t }}</th><th scope="col">{{ 'reports.qty' | t }}</th><th scope="col">{{ 'reports.revenue' | t }}</th></tr>
               </thead>
               <tbody>
                 @for (row of byMedicine(); track row.medicineId) {
-                  <tr><td>{{ row.medicineName }}</td><td>{{ row.quantitySold }}</td><td class="nowrap">৳{{ row.revenue }}</td></tr>
+                  <tr><td>{{ row.medicineName }}</td><td>{{ row.quantitySold }}</td><td class="nowrap">{{ row.revenue | money }}</td></tr>
                 }
               </tbody>
             </table>
           </div>
           <div class="row">
-            <button type="button" class="button button--small" (click)="exportCsv('sales-by-medicine', ['medicineName', 'quantitySold', 'revenue'], [...byMedicine()])">Export CSV</button>
+            <button type="button" class="button button--small" (click)="exportCsv('sales-by-medicine', ['medicineName', 'quantitySold', 'revenue'], [...byMedicine()])">{{ 'reports.exportCsv' | t }}</button>
           </div>
         }
       </section>
 
       <section class="panel">
-        <h2>Best sellers</h2>
+        <h2>{{ 'reports.bestSellers' | t }}</h2>
         @if (bestSellers().length === 0) {
-          <p class="muted">No sales in the window yet.</p>
+          <p class="muted">{{ 'reports.noWindowSales' | t }}</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th scope="col">Medicine</th><th scope="col">Qty</th><th scope="col">Revenue</th></tr>
+                <tr><th scope="col">{{ 'reports.medicine' | t }}</th><th scope="col">{{ 'reports.qty' | t }}</th><th scope="col">{{ 'reports.revenue' | t }}</th></tr>
               </thead>
               <tbody>
                 @for (row of bestSellers(); track row.medicineId) {
-                  <tr><td>{{ row.medicineName }}</td><td>{{ row.quantitySold }}</td><td class="nowrap">৳{{ row.revenue }}</td></tr>
+                  <tr><td>{{ row.medicineName }}</td><td>{{ row.quantitySold }}</td><td class="nowrap">{{ row.revenue | money }}</td></tr>
                 }
               </tbody>
             </table>
@@ -168,18 +161,18 @@
       </section>
 
       <section class="panel">
-        <h2>Slow movers (incl. zero-sale medicines)</h2>
+        <h2>{{ 'reports.slowMovers' | t }}</h2>
         @if (slowMovers().length === 0) {
-          <p class="muted">Every active medicine sold recently.</p>
+          <p class="muted">{{ 'reports.slowMoversEmpty' | t }}</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th scope="col">Medicine</th><th scope="col">Qty</th><th scope="col">Revenue</th></tr>
+                <tr><th scope="col">{{ 'reports.medicine' | t }}</th><th scope="col">{{ 'reports.qty' | t }}</th><th scope="col">{{ 'reports.revenue' | t }}</th></tr>
               </thead>
               <tbody>
                 @for (row of slowMovers(); track row.medicineId) {
-                  <tr><td>{{ row.medicineName }}</td><td>{{ row.quantitySold }}</td><td class="nowrap">৳{{ row.revenue }}</td></tr>
+                  <tr><td>{{ row.medicineName }}</td><td>{{ row.quantitySold }}</td><td class="nowrap">{{ row.revenue | money }}</td></tr>
                 }
               </tbody>
             </table>
@@ -190,45 +183,45 @@
 
     @if (canReadInventory()) {
       <section class="panel">
-        <h2>Stock valuation</h2>
+        <h2>{{ 'reports.valuation' | t }}</h2>
         @if (valuation(); as value) {
           <dl class="facts">
-            <div><dt>Medicines stocked</dt><dd>{{ value.medicineCount }}</dd></div>
-            <div><dt>Total units</dt><dd>{{ value.totalUnits }}</dd></div>
-            <div><dt>Purchase value</dt><dd><strong>৳{{ value.purchaseValue }}</strong></dd></div>
-            <div><dt>Selling value</dt><dd><strong>৳{{ value.sellingValue }}</strong></dd></div>
+            <div><dt>{{ 'reports.medicinesStocked' | t }}</dt><dd>{{ value.medicineCount }}</dd></div>
+            <div><dt>{{ 'reports.totalUnits' | t }}</dt><dd>{{ value.totalUnits }}</dd></div>
+            <div><dt>{{ 'reports.purchaseValue' | t }}</dt><dd><strong>{{ value.purchaseValue | money }}</strong></dd></div>
+            <div><dt>{{ 'reports.sellingValue' | t }}</dt><dd><strong>{{ value.sellingValue | money }}</strong></dd></div>
           </dl>
           @if (value.rows.length === 0) {
-            <p class="muted">No stocked batches.</p>
+            <p class="muted">{{ 'reports.noBatches' | t }}</p>
           } @else {
             <div class="table-wrap">
               <table>
                 <thead>
-                  <tr><th scope="col">Medicine</th><th scope="col">Units</th><th scope="col">Purchase</th><th scope="col">Selling</th></tr>
+                  <tr><th scope="col">{{ 'reports.medicine' | t }}</th><th scope="col">{{ 'reports.units' | t }}</th><th scope="col">{{ 'reports.purchase' | t }}</th><th scope="col">{{ 'reports.selling' | t }}</th></tr>
                 </thead>
                 <tbody>
                   @for (row of value.rows; track row.medicineId) {
-                    <tr><td>{{ row.medicineName }}</td><td>{{ row.totalQuantity }}</td><td class="nowrap">৳{{ row.purchaseValue }}</td><td class="nowrap">৳{{ row.sellingValue }}</td></tr>
+                    <tr><td>{{ row.medicineName }}</td><td>{{ row.totalQuantity }}</td><td class="nowrap">{{ row.purchaseValue | money }}</td><td class="nowrap">{{ row.sellingValue | money }}</td></tr>
                   }
                 </tbody>
               </table>
             </div>
             <div class="row">
-              <button type="button" class="button button--small" (click)="exportCsv('stock-valuation', ['medicineName', 'totalQuantity', 'purchaseValue', 'sellingValue'], [...value.rows])">Export CSV</button>
+              <button type="button" class="button button--small" (click)="exportCsv('stock-valuation', ['medicineName', 'totalQuantity', 'purchaseValue', 'sellingValue'], [...value.rows])">{{ 'reports.exportCsv' | t }}</button>
             </div>
           }
         }
       </section>
 
       <section class="panel">
-        <h2>Low stock</h2>
+        <h2>{{ 'reports.lowStock' | t }}</h2>
         @if (lowStock().length === 0) {
-          <p class="muted">Nothing below reorder level.</p>
+          <p class="muted">{{ 'reports.lowStockEmpty' | t }}</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th scope="col">Medicine</th><th scope="col">On hand</th><th scope="col">Reorder at</th><th scope="col">Short by</th></tr>
+                <tr><th scope="col">{{ 'reports.medicine' | t }}</th><th scope="col">{{ 'reports.onHand' | t }}</th><th scope="col">{{ 'reports.reorderAt' | t }}</th><th scope="col">{{ 'reports.shortBy' | t }}</th></tr>
               </thead>
               <tbody>
                 @for (row of lowStock(); track row.medicineId) {
@@ -238,7 +231,7 @@
             </table>
           </div>
           <div class="row">
-            <button type="button" class="button button--small" (click)="exportCsv('low-stock', ['medicineName', 'totalQuantity', 'reorderLevel', 'deficit'], [...lowStock()])">Export CSV</button>
+            <button type="button" class="button button--small" (click)="exportCsv('low-stock', ['medicineName', 'totalQuantity', 'reorderLevel', 'deficit'], [...lowStock()])">{{ 'reports.exportCsv' | t }}</button>
           </div>
         }
       </section>
@@ -246,36 +239,36 @@
 
     @if (canReadPurchasing()) {
       <section class="panel">
-        <h2>Purchase totals</h2>
+        <h2>{{ 'reports.purchaseTotals' | t }}</h2>
         @if (purchaseTotals(); as totals) {
           <dl class="facts">
-            <div><dt>Received ({{ totals.from }} → {{ totals.to }})</dt><dd>{{ totals.receivedCount }} · <strong>৳{{ totals.receivedTotal }}</strong></dd></div>
-            <div><dt>Open drafts</dt><dd>{{ totals.draftCount }}</dd></div>
+            <div><dt>{{ 'reports.received' | t }} ({{ totals.from | ldate }} → {{ totals.to | ldate }})</dt><dd>{{ totals.receivedCount }} · <strong>{{ totals.receivedTotal | money }}</strong></dd></div>
+            <div><dt>{{ 'reports.openDrafts' | t }}</dt><dd>{{ totals.draftCount }}</dd></div>
           </dl>
         } @else {
-          <p class="muted">No purchase data yet.</p>
+          <p class="muted">{{ 'reports.noPurchaseData' | t }}</p>
         }
       </section>
 
       <section class="panel">
-        <h2>Purchases by supplier</h2>
+        <h2>{{ 'reports.bySupplier' | t }}</h2>
         @if (bySupplier().length === 0) {
-          <p class="muted">No received purchases in this period yet.</p>
+          <p class="muted">{{ 'reports.noReceived' | t }}</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th scope="col">Supplier</th><th scope="col">Purchases</th><th scope="col">Total</th></tr>
+                <tr><th scope="col">{{ 'reports.supplier' | t }}</th><th scope="col">{{ 'reports.purchases' | t }}</th><th scope="col">{{ 'reports.revenue' | t }}</th></tr>
               </thead>
               <tbody>
                 @for (row of bySupplier(); track row.supplierId) {
-                  <tr><td>{{ row.supplierName }}</td><td>{{ row.purchaseCount }}</td><td class="nowrap">৳{{ row.totalAmount }}</td></tr>
+                  <tr><td>{{ row.supplierName }}</td><td>{{ row.purchaseCount }}</td><td class="nowrap">{{ row.totalAmount | money }}</td></tr>
                 }
               </tbody>
             </table>
           </div>
           <div class="row">
-            <button type="button" class="button button--small" (click)="exportCsv('purchases-by-supplier', ['supplierName', 'purchaseCount', 'totalAmount'], [...bySupplier()])">Export CSV</button>
+            <button type="button" class="button button--small" (click)="exportCsv('purchases-by-supplier', ['supplierName', 'purchaseCount', 'totalAmount'], [...bySupplier()])">{{ 'reports.exportCsv' | t }}</button>
           </div>
         }
       </section>

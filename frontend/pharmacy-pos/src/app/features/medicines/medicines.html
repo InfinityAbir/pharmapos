@@ -1,19 +1,14 @@
 <section class="page">
   <header class="page__head">
-    <p class="eyebrow">Catalog</p>
-    <h1>Medicines</h1>
-    <p class="lede">
-      The tenant's medicine catalog. Search matches brand, generic, barcode and manufacturer.
-      Writes are guarded by <code>tenant.medicines.manage</code> on the server.
-    </p>
+    <p class="eyebrow">{{ 'medicines.eyebrow' | t }}</p>
+    <h1>{{ 'medicines.title' | t }}</h1>
+    <p class="lede">{{ 'medicines.lede' | t }}</p>
   </header>
 
   @if (loading()) {
-    <p class="muted">Loading…</p>
+    <p class="muted">{{ 'common.loading' | t }}</p>
   } @else if (forbidden()) {
-    <p class="notice" role="status">
-      Your account does not have the <code>tenant.medicines.read</code> permission.
-    </p>
+    <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'tenant.medicines.read' } }}</p>
   } @else {
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
@@ -22,44 +17,44 @@
     <div class="panel">
       <div class="fields fields--filters">
         <label>
-          Search
+          {{ 'common.search' | t }}
           <input
             type="text"
             name="search"
             [(ngModel)]="search"
             (ngModelChange)="onSearchInput()"
-            placeholder="Brand, generic, barcode, manufacturer…"
+            [placeholder]="'medicines.searchPlaceholder' | t"
             autocomplete="off"
           />
         </label>
         <label>
-          Category
+          {{ 'medicines.category' | t }}
           <select name="filterCategory" [(ngModel)]="filterCategory" (ngModelChange)="onFilterChange()">
-            <option value="">All categories</option>
+            <option value="">{{ 'medicines.allCategories' | t }}</option>
             @for (category of categories(); track category.id) {
               <option [value]="category.id">{{ category.name }}</option>
             }
           </select>
         </label>
         <label>
-          Manufacturer
+          {{ 'medicines.manufacturer' | t }}
           <select
             name="filterManufacturer"
             [(ngModel)]="filterManufacturer"
             (ngModelChange)="onFilterChange()"
           >
-            <option value="">All manufacturers</option>
+            <option value="">{{ 'medicines.allManufacturers' | t }}</option>
             @for (manufacturer of manufacturers(); track manufacturer.id) {
               <option [value]="manufacturer.id">{{ manufacturer.name }}</option>
             }
           </select>
         </label>
         <label>
-          Status
+          {{ 'common.status' | t }}
           <select name="filterActive" [(ngModel)]="filterActive" (ngModelChange)="onFilterChange()">
-            <option value="active">Active only</option>
-            <option value="inactive">Inactive only</option>
-            <option value="all">All</option>
+            <option value="active">{{ 'medicines.activeOnly' | t }}</option>
+            <option value="inactive">{{ 'medicines.inactiveOnly' | t }}</option>
+            <option value="all">{{ 'medicines.all' | t }}</option>
           </select>
         </label>
       </div>
@@ -67,22 +62,22 @@
 
     @if (hasPermission(canManage)) {
       <form class="panel" (ngSubmit)="save()">
-        <h2>{{ editingId() ? 'Edit medicine' : 'New medicine' }}</h2>
+        <h2>{{ editingId() ? ('medicines.editMedicine' | t) : ('medicines.newMedicine' | t) }}</h2>
         <div class="fields">
           <label>
-            Brand name
+            {{ 'medicines.brandName' | t }}
             <input type="text" name="brandName" [(ngModel)]="form.brandName" maxlength="160" autocomplete="off" />
           </label>
           <label>
-            Generic name
+            {{ 'medicines.genericName' | t }}
             <input type="text" name="genericName" [(ngModel)]="form.genericName" maxlength="160" autocomplete="off" />
           </label>
           <label>
-            Strength
-            <input type="text" name="strength" [(ngModel)]="form.strength" placeholder="500mg" maxlength="64" autocomplete="off" />
+            {{ 'medicines.strength' | t }}
+            <input type="text" name="strength" [(ngModel)]="form.strength" [placeholder]="'medicines.strengthPlaceholder' | t" maxlength="64" autocomplete="off" />
           </label>
           <label>
-            Dosage form
+            {{ 'medicines.dosageForm' | t }}
             <select name="dosageForm" [(ngModel)]="form.dosageForm">
               @for (dosage of dosageForms; track dosage) {
                 <option [value]="dosage">{{ dosage }}</option>
@@ -90,7 +85,7 @@
             </select>
           </label>
           <label>
-            Manufacturer
+            {{ 'medicines.manufacturer' | t }}
             <select name="manufacturerId" [(ngModel)]="form.manufacturerId">
               <option [ngValue]="null">—</option>
               @for (manufacturer of manufacturers(); track manufacturer.id) {
@@ -99,7 +94,7 @@
             </select>
           </label>
           <label>
-            Category
+            {{ 'medicines.category' | t }}
             <select name="categoryId" [(ngModel)]="form.categoryId">
               <option [ngValue]="null">—</option>
               @for (category of categories(); track category.id) {
@@ -108,36 +103,36 @@
             </select>
           </label>
           <label>
-            Barcode
+            {{ 'medicines.barcode' | t }}
             <input type="text" name="barcode" [(ngModel)]="form.barcode" maxlength="64" autocomplete="off" />
           </label>
           <label>
-            Unit
-            <input type="text" name="unit" [(ngModel)]="form.unit" placeholder="strip" maxlength="32" autocomplete="off" />
+            {{ 'medicines.unit' | t }}
+            <input type="text" name="unit" [(ngModel)]="form.unit" [placeholder]="'medicines.unitPlaceholder' | t" maxlength="32" autocomplete="off" />
           </label>
           <label>
-            Pack size
+            {{ 'medicines.packSize' | t }}
             <input type="number" name="packSize" [(ngModel)]="form.packSize" min="1" />
           </label>
           <label>
-            Purchase price (BDT)
+            {{ 'medicines.purchasePrice' | t }}
             <input type="number" name="purchasePrice" [(ngModel)]="form.purchasePrice" min="0" step="0.01" />
           </label>
           <label>
-            Selling price (BDT)
+            {{ 'medicines.sellingPrice' | t }}
             <input type="number" name="sellingPrice" [(ngModel)]="form.sellingPrice" min="0" step="0.01" />
           </label>
           <label>
-            Reorder level
+            {{ 'medicines.reorderLevel' | t }}
             <input type="number" name="reorderLevel" [(ngModel)]="form.reorderLevel" min="0" step="1" />
           </label>
           <label>
-            VAT rate (%)
+            {{ 'medicines.vatRate' | t }}
             <input type="number" name="vatRate" [(ngModel)]="form.vatRate" min="0" max="100" step="0.01" />
           </label>
           <label class="check">
             <input type="checkbox" name="requiresPrescription" [(ngModel)]="form.requiresPrescription" />
-            Prescription required
+            {{ 'medicines.rxRequired' | t }}
           </label>
         </div>
         @if (formError(); as message) {
@@ -145,29 +140,29 @@
         }
         <div class="row">
           <button type="submit" class="button" [disabled]="saving()">
-            {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Create medicine' }}
+            {{ saving() ? ('common.saving' | t) : editingId() ? ('common.saveChanges' | t) : ('medicines.createMedicine' | t) }}
           </button>
           @if (editingId()) {
-            <button type="button" class="button button--ghost" (click)="startCreate()">Cancel</button>
+            <button type="button" class="button button--ghost" (click)="startCreate()">{{ 'common.cancel' | t }}</button>
           }
         </div>
       </form>
     }
 
     @if (medicines().length === 0) {
-      <p class="muted">No medicines match this search.</p>
+      <p class="muted">{{ 'medicines.noMatch' | t }}</p>
     } @else {
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th scope="col">Medicine</th>
-              <th scope="col">Form</th>
-              <th scope="col">Barcode</th>
-              <th scope="col">Price</th>
-              <th scope="col">Status</th>
+              <th scope="col">{{ 'medicines.medicine' | t }}</th>
+              <th scope="col">{{ 'medicines.form' | t }}</th>
+              <th scope="col">{{ 'medicines.barcode' | t }}</th>
+              <th scope="col">{{ 'medicines.price' | t }}</th>
+              <th scope="col">{{ 'common.status' | t }}</th>
               @if (hasPermission(canManage)) {
-                <th scope="col"><span class="sr-only">Actions</span></th>
+                <th scope="col"><span class="sr-only">{{ 'common.actions' | t }}</span></th>
               }
             </tr>
           </thead>
@@ -192,16 +187,16 @@
                     <span class="muted">—</span>
                   }
                 </td>
-                <td class="nowrap">৳{{ medicine.sellingPrice }}</td>
+                <td class="nowrap">{{ medicine.sellingPrice | money }}</td>
                 <td>
                   <span class="pill" [class.pill--warn]="!medicine.isActive">
-                    {{ medicine.isActive ? 'Active' : 'Inactive' }}
+                    {{ medicine.isActive ? ('common.active' | t) : ('common.inactive' | t) }}
                   </span>
                 </td>
                 @if (hasPermission(canManage)) {
                   <td class="actions">
                     <button type="button" class="button button--small" (click)="startEdit(medicine)">
-                      Edit
+                      {{ 'common.edit' | t }}
                     </button>
                     @if (medicine.isActive) {
                       <button
@@ -209,7 +204,7 @@
                         class="button button--small"
                         (click)="setStatus(medicine, false)"
                       >
-                        Deactivate
+                        {{ 'common.deactivate' | t }}
                       </button>
                     } @else {
                       <button
@@ -217,7 +212,7 @@
                         class="button button--small"
                         (click)="setStatus(medicine, true)"
                       >
-                        Activate
+                        {{ 'common.activate' | t }}
                       </button>
                     }
                   </td>

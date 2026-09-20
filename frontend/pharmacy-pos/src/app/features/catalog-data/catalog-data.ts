@@ -3,15 +3,19 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { CatalogApi, Category, Manufacturer } from '../../core/http/catalog-api.service';
+import { describeApiError } from '../../core/i18n/error-message';
+import { TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 
 @Component({
   selector: 'app-catalog-data',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './catalog-data.html',
   styleUrl: './catalog-data.css',
 })
 export class CatalogDataPage implements OnInit {
   private readonly api = inject(CatalogApi);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly categories = signal<readonly Category[]>([]);
   protected readonly manufacturers = signal<readonly Manufacturer[]>([]);
@@ -48,7 +52,7 @@ export class CatalogDataPage implements OnInit {
   protected async saveCategory(): Promise<void> {
     const name = this.categoryName.trim();
     if (!name) {
-      this.notice.set('A category name is required.');
+      this.notice.set(this.lang.t('catalog.categoryRequired'));
       return;
     }
 
@@ -67,7 +71,7 @@ export class CatalogDataPage implements OnInit {
       this.cancelEditCategory();
       await this.reload();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The category could not be saved.', 'category'));
+      this.notice.set(this.describe(error, 'catalog.saveFailed', 'category'));
     }
   }
 
@@ -78,7 +82,7 @@ export class CatalogDataPage implements OnInit {
       await firstValueFrom(this.api.deleteCategory(category.id));
       await this.reload();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The category could not be deleted.', 'category'));
+      this.notice.set(this.describe(error, 'catalog.deleteFailed', 'category'));
     }
   }
 
@@ -98,7 +102,7 @@ export class CatalogDataPage implements OnInit {
   protected async saveManufacturer(): Promise<void> {
     const name = this.manufacturerName.trim();
     if (!name) {
-      this.notice.set('A manufacturer name is required.');
+      this.notice.set(this.lang.t('catalog.manufacturerRequired'));
       return;
     }
 
@@ -121,7 +125,7 @@ export class CatalogDataPage implements OnInit {
       this.cancelEditManufacturer();
       await this.reload();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The manufacturer could not be saved.', 'manufacturer'));
+      this.notice.set(this.describe(error, 'catalog.saveFailed', 'manufacturer'));
     }
   }
 
@@ -132,7 +136,7 @@ export class CatalogDataPage implements OnInit {
       await firstValueFrom(this.api.deleteManufacturer(manufacturer.id));
       await this.reload();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The manufacturer could not be deleted.', 'manufacturer'));
+      this.notice.set(this.describe(error, 'catalog.deleteFailed', 'manufacturer'));
     }
   }
 
@@ -151,7 +155,7 @@ export class CatalogDataPage implements OnInit {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The catalog data could not be loaded.');
+        this.error.set(this.lang.t('catalog.loadFailed'));
       }
     } finally {
       this.loading.set(false);
@@ -167,18 +171,15 @@ export class CatalogDataPage implements OnInit {
     this.manufacturers.set(manufacturers);
   }
 
-  private describe(error: unknown, fallback: string, kind: 'category' | 'manufacturer'): string {
+  private describe(error: unknown, fallbackKey: string, kind: 'category' | 'manufacturer'): string {
     if (error instanceof HttpErrorResponse) {
-      const detail = (error.error as { detail?: string } | undefined)?.detail;
-      if (typeof detail === 'string' && detail.length > 0) {
-        return detail;
-      }
-      if (error.status === 409) {
-        return error.url?.includes('manufacturers') || kind === 'manufacturer'
-          ? 'This manufacturer cannot be deleted while medicines reference it, and names must be unique.'
-          : 'This category cannot be deleted while medicines reference it, and names must be unique.';
+      const body = (error.error ?? {}) as { code?: string };
+      if (!body.code && error.status === 409) {
+        return this.lang.t(
+          kind === 'manufacturer' ? 'catalog.manufacturerConflict' : 'catalog.categoryConflict',
+        );
       }
     }
-    return fallback;
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

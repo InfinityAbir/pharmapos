@@ -16,17 +16,20 @@ import {
   StockValuation,
 } from '../../core/http/reports-api.service';
 import { downloadCsv, toCsvRecords } from '../../core/http/csv-export';
+import { LDatePipe, MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 import { SessionService } from '../../core/session/session.service';
 
 @Component({
   selector: 'app-reports',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe, MoneyPipe, LDatePipe],
   templateUrl: './reports.html',
   styleUrl: './reports.css',
 })
 export class ReportsPage implements OnInit {
   private readonly api = inject(ReportsApi);
   protected readonly session = inject(SessionService);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly trend = signal<readonly SalesTrendBucket[]>([]);
   protected readonly byCashier = signal<readonly SalesByCashierRow[]>([]);
@@ -69,6 +72,17 @@ export class ReportsPage implements OnInit {
 
   protected onFilterChange(): void {
     void this.load();
+  }
+
+  protected bucketLabel(): string {
+    switch (this.bucket) {
+      case 'week':
+        return this.lang.t('reports.weekly');
+      case 'month':
+        return this.lang.t('reports.monthly');
+      default:
+        return this.lang.t('reports.daily');
+    }
   }
 
   protected exportCsv(name: string, columns: readonly string[], rows: readonly unknown[]): void {
@@ -117,9 +131,9 @@ export class ReportsPage implements OnInit {
       }
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 403) {
-        this.error.set('Your account is missing a permission required for one of these reports.');
+        this.error.set(this.lang.t('reports.permissionMissing'));
       } else {
-        this.error.set('The reports could not be loaded.');
+        this.error.set(this.lang.t('reports.loadFailed'));
       }
     } finally {
       this.loading.set(false);

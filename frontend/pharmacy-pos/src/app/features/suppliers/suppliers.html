@@ -1,19 +1,14 @@
 <section class="page">
   <header class="page__head">
-    <p class="eyebrow">Purchasing</p>
-    <h1>Suppliers</h1>
-    <p class="lede">
-      The tenant's suppliers. Deletion is refused while purchases reference a supplier.
-      Writes are guarded by <code>tenant.purchasing.manage</code> on the server.
-    </p>
+    <p class="eyebrow">{{ 'suppliers.eyebrow' | t }}</p>
+    <h1>{{ 'suppliers.title' | t }}</h1>
+    <p class="lede">{{ 'suppliers.lede' | t }}</p>
   </header>
 
   @if (loading()) {
-    <p class="muted">Loading…</p>
+    <p class="muted">{{ 'common.loading' | t }}</p>
   } @else if (forbidden()) {
-    <p class="notice" role="status">
-      Your account does not have the <code>tenant.purchasing.read</code> permission.
-    </p>
+    <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'tenant.purchasing.read' } }}</p>
   } @else {
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
@@ -21,43 +16,43 @@
 
     <div class="panel">
       <label>
-        Search
+        {{ 'common.search' | t }}
         <input
           type="text"
           name="search"
           [(ngModel)]="search"
           (ngModelChange)="onSearchInput()"
-          placeholder="Name or company…"
+          [placeholder]="'suppliers.searchPlaceholder' | t"
           autocomplete="off"
         />
       </label>
     </div>
 
     <form class="panel" (ngSubmit)="save()">
-      <h2>{{ editingId() ? 'Edit supplier' : 'New supplier' }}</h2>
+      <h2>{{ editingId() ? ('suppliers.editSupplier' | t) : ('suppliers.newSupplier' | t) }}</h2>
       <div class="fields">
         <label>
-          Name
+          {{ 'common.name' | t }}
           <input type="text" name="name" [(ngModel)]="form.name" maxlength="128" autocomplete="off" />
         </label>
         <label>
-          Company
+          {{ 'suppliers.company' | t }}
           <input type="text" name="company" [(ngModel)]="form.company" maxlength="160" autocomplete="off" />
         </label>
         <label>
-          Phone
+          {{ 'common.phone' | t }}
           <input type="text" name="phone" [(ngModel)]="form.phone" maxlength="64" autocomplete="off" />
         </label>
         <label>
-          Email
+          {{ 'common.email' | t }}
           <input type="email" name="email" [(ngModel)]="form.email" maxlength="320" autocomplete="off" />
         </label>
         <label class="wide">
-          Address
+          {{ 'common.address' | t }}
           <input type="text" name="address" [(ngModel)]="form.address" maxlength="512" autocomplete="off" />
         </label>
         <label>
-          Contact person
+          {{ 'suppliers.contactPerson' | t }}
           <input
             type="text"
             name="contactPerson"
@@ -67,12 +62,12 @@
           />
         </label>
         <label>
-          Payment terms
+          {{ 'suppliers.paymentTerms' | t }}
           <input
             type="text"
             name="paymentTerms"
             [(ngModel)]="form.paymentTerms"
-            placeholder="Net 30"
+            [placeholder]="'suppliers.paymentTermsPlaceholder' | t"
             maxlength="256"
             autocomplete="off"
           />
@@ -83,25 +78,25 @@
       }
       <div class="row">
         <button type="submit" class="button" [disabled]="saving()">
-          {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Create supplier' }}
+          {{ saving() ? ('common.saving' | t) : editingId() ? ('common.saveChanges' | t) : ('suppliers.createSupplier' | t) }}
         </button>
         @if (editingId()) {
-          <button type="button" class="button button--ghost" (click)="startCreate()">Cancel</button>
+          <button type="button" class="button button--ghost" (click)="startCreate()">{{ 'common.cancel' | t }}</button>
         }
       </div>
     </form>
 
     @if (suppliers().length === 0) {
-      <p class="muted">No suppliers found.</p>
+      <p class="muted">{{ 'suppliers.noSuppliers' | t }}</p>
     } @else {
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th scope="col">Supplier</th>
-              <th scope="col">Contact</th>
-              <th scope="col">Status</th>
-              <th scope="col"><span class="sr-only">Actions</span></th>
+              <th scope="col">{{ 'suppliers.supplier' | t }}</th>
+              <th scope="col">{{ 'common.contact' | t }}</th>
+              <th scope="col">{{ 'common.status' | t }}</th>
+              <th scope="col"><span class="sr-only">{{ 'common.actions' | t }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -125,12 +120,12 @@
                 </td>
                 <td>
                   <span class="pill" [class.pill--warn]="!supplier.isActive">
-                    {{ supplier.isActive ? 'Active' : 'Inactive' }}
+                    {{ supplier.isActive ? ('common.active' | t) : ('common.inactive' | t) }}
                   </span>
                 </td>
                 <td class="actions">
                   <button type="button" class="button button--small" (click)="startEdit(supplier)">
-                    Edit
+                    {{ 'common.edit' | t }}
                   </button>
                   @if (supplier.isActive) {
                     <button
@@ -138,7 +133,7 @@
                       class="button button--small"
                       (click)="setStatus(supplier, false)"
                     >
-                      Deactivate
+                      {{ 'common.deactivate' | t }}
                     </button>
                   } @else {
                     <button
@@ -146,11 +141,11 @@
                       class="button button--small"
                       (click)="setStatus(supplier, true)"
                     >
-                      Activate
+                      {{ 'common.activate' | t }}
                     </button>
                   }
                   <button type="button" class="button button--small button--danger" (click)="remove(supplier)">
-                    Delete
+                    {{ 'common.delete' | t }}
                   </button>
                 </td>
               </tr>

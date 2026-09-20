@@ -4,6 +4,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { PERMISSIONS } from '../../core/auth/permissions';
 import { CatalogApi, PharmacyProfile } from '../../core/http/catalog-api.service';
+import { describeApiError } from '../../core/i18n/error-message';
+import { TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 import { SessionService } from '../../core/session/session.service';
 
 function blankProfile(): PharmacyProfile {
@@ -25,13 +28,14 @@ function blankProfile(): PharmacyProfile {
 
 @Component({
   selector: 'app-pharmacy-profile',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './pharmacy-profile.html',
   styleUrl: './pharmacy-profile.css',
 })
 export class PharmacyProfilePage implements OnInit {
   private readonly api = inject(CatalogApi);
   protected readonly session = inject(SessionService);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly canManage = PERMISSIONS.tenantPharmacyManage;
 
@@ -57,7 +61,7 @@ export class PharmacyProfilePage implements OnInit {
     this.saved.set(false);
 
     if (!this.profile.pharmacyName.trim()) {
-      this.error.set('The pharmacy name is required.');
+      this.error.set(this.lang.t('pharmacy.nameRequired'));
       return;
     }
 
@@ -83,16 +87,7 @@ export class PharmacyProfilePage implements OnInit {
       this.notConfigured.set(false);
       this.saved.set(true);
     } catch (error) {
-      if (error instanceof HttpErrorResponse) {
-        const detail = (error.error as { detail?: string } | undefined)?.detail;
-        this.error.set(
-          typeof detail === 'string' && detail.length > 0
-            ? detail
-            : 'The pharmacy profile could not be saved.',
-        );
-      } else {
-        this.error.set('The pharmacy profile could not be saved.');
-      }
+      this.error.set(describeApiError(this.lang, error, 'pharmacy.saveFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -113,7 +108,7 @@ export class PharmacyProfilePage implements OnInit {
         this.notConfigured.set(true);
         this.profile = blankProfile();
       } else {
-        this.error.set('The pharmacy profile could not be loaded.');
+        this.error.set(this.lang.t('pharmacy.loadFailed'));
       }
     } finally {
       this.loading.set(false);

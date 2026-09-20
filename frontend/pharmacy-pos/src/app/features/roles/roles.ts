@@ -4,15 +4,19 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { PERMISSION_CATALOG } from '../../core/auth/permissions';
 import { Role, TenancyApi } from '../../core/http/tenancy-api.service';
+import { describeApiError } from '../../core/i18n/error-message';
+import { TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 
 @Component({
   selector: 'app-roles',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './roles.html',
   styleUrl: './roles.css',
 })
 export class RolesPage implements OnInit {
   private readonly api = inject(TenancyApi);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly catalog = PERMISSION_CATALOG;
   protected readonly roles = signal<readonly Role[]>([]);
@@ -58,7 +62,7 @@ export class RolesPage implements OnInit {
 
     const name = this.name.trim();
     if (!name) {
-      this.formError.set('A role name is required.');
+      this.formError.set(this.lang.t('roles.nameRequired'));
       return;
     }
 
@@ -76,7 +80,7 @@ export class RolesPage implements OnInit {
       this.startCreate();
       await this.load();
     } catch (error) {
-      this.formError.set(this.describe(error, 'The role could not be saved.'));
+      this.formError.set(this.describe(error, 'roles.saveFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -91,7 +95,7 @@ export class RolesPage implements OnInit {
       await firstValueFrom(this.api.deleteRole(role.id));
       await this.load();
     } catch (error) {
-      this.error.set(this.describe(error, 'The role could not be deleted.'));
+      this.error.set(this.describe(error, 'roles.deleteFailed'));
     }
   }
 
@@ -106,29 +110,25 @@ export class RolesPage implements OnInit {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The role directory could not be loaded.');
+        this.error.set(this.lang.t('roles.loadFailed'));
       }
     } finally {
       this.loading.set(false);
     }
   }
 
-  private describe(error: unknown, fallback: string): string {
+  private describe(error: unknown, fallbackKey: string): string {
     if (error instanceof HttpErrorResponse) {
-      const detail = (error.error as { detail?: string } | undefined)?.detail;
-      if (typeof detail === 'string' && detail.length > 0) {
-        return detail;
-      }
-      if (error.status === 409) {
-        return 'A role with this name already exists.';
-      }
-      if (error.status === 403) {
-        return 'System roles cannot be changed.';
-      }
-      if (error.status === 422) {
-        return 'One of the selected permissions is not a known permission code.';
+      const body = (error.error ?? {}) as { code?: string };
+      if (!body.code) {
+        if (error.status === 409) {
+          return this.lang.t('roles.nameConflict');
+        }
+        if (error.status === 403) {
+          return this.lang.t('roles.systemLocked');
+        }
       }
     }
-    return fallback;
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

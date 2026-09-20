@@ -1,31 +1,26 @@
 @if (receipt(); as slip) {
   <section class="page">
     <header class="page__head no-print">
-      <p class="eyebrow">Sales</p>
-      <h1>Receipt {{ slip.sale.invoiceNumber }}</h1>
+      <p class="eyebrow">{{ 'sales.eyebrow' | t }}</p>
+      <h1>{{ 'sales.receiptTitle' | t }} {{ slip.sale.invoiceNumber }}</h1>
     </header>
     <app-receipt [receipt]="slip" />
     <div class="row no-print">
-      <button type="button" class="button" (click)="backToList()">Back to sales</button>
+      <button type="button" class="button" (click)="backToList()">{{ 'common.backToSales' | t }}</button>
     </div>
   </section>
 } @else {
   <section class="page">
     <header class="page__head">
-      <p class="eyebrow">Sales</p>
-      <h1>Sales history</h1>
-      <p class="lede">
-        Completed sales, newest first. Completed sales are immutable; corrections go through
-        returns below (refunds are computed server-side from the original lines).
-      </p>
+      <p class="eyebrow">{{ 'sales.eyebrow' | t }}</p>
+      <h1>{{ 'sales.historyTitle' | t }}</h1>
+      <p class="lede">{{ 'sales.historyLede' | t }}</p>
     </header>
 
     @if (loading()) {
-      <p class="muted">Loading…</p>
+      <p class="muted">{{ 'common.loading' | t }}</p>
     } @else if (forbidden()) {
-      <p class="notice" role="status">
-        Your account does not have the <code>tenant.sales.read</code> permission.
-      </p>
+      <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'tenant.sales.read' } }}</p>
     } @else {
       @if (error(); as message) {
         <p class="alert" role="alert">{{ message }}</p>
@@ -34,29 +29,29 @@
       <div class="panel">
         <div class="fields fields--filters">
           <label>
-            From
+            {{ 'sales.from' | t }}
             <input type="date" name="from" [(ngModel)]="from" (ngModelChange)="onFilterChange()" />
           </label>
           <label>
-            To
+            {{ 'sales.to' | t }}
             <input type="date" name="to" [(ngModel)]="to" (ngModelChange)="onFilterChange()" />
           </label>
         </div>
       </div>
 
       @if (sales().length === 0) {
-        <p class="muted">No sales in this period yet.</p>
+        <p class="muted">{{ 'sales.noSales' | t }}</p>
       } @else {
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th scope="col">Invoice</th>
-                <th scope="col">When</th>
-                <th scope="col">Lines</th>
-                <th scope="col">Total</th>
-                <th scope="col">Paid</th>
-                <th scope="col"><span class="sr-only">Actions</span></th>
+                <th scope="col">{{ 'sales.invoice' | t }}</th>
+                <th scope="col">{{ 'sales.when' | t }}</th>
+                <th scope="col">{{ 'sales.lines' | t }}</th>
+                <th scope="col">{{ 'sales.total' | t }}</th>
+                <th scope="col">{{ 'sales.paid' | t }}</th>
+                <th scope="col"><span class="sr-only">{{ 'common.actions' | t }}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -68,17 +63,17 @@
                       <div class="muted small">{{ sale.customerName }}</div>
                     }
                   </td>
-                  <td class="nowrap">{{ sale.occurredAtUtc | date: 'short' }}</td>
+                  <td class="nowrap">{{ sale.occurredAtUtc | ldate }}</td>
                   <td>{{ sale.items.length }}</td>
-                  <td class="nowrap">৳{{ sale.totalAmount }}</td>
-                  <td class="nowrap">৳{{ sale.paidAmount }}</td>
+                  <td class="nowrap">{{ sale.totalAmount | money }}</td>
+                  <td class="nowrap">{{ sale.paidAmount | money }}</td>
                   <td class="actions">
                     <button type="button" class="button button--small" (click)="showReceipt(sale)">
-                      Receipt
+                      {{ 'common.receipt' | t }}
                     </button>
                     @if (canReadReturns()) {
                       <button type="button" class="button button--small" (click)="startReturn(sale)">
-                        Return
+                        {{ 'common.return' | t }}
                       </button>
                     }
                   </td>
@@ -91,23 +86,23 @@
 
       @if (returnable(); as data) {
         <div class="panel">
-          <h2>Return {{ data.invoiceNumber }}</h2>
+          <h2>{{ 'sales.returnTitle' | t }} {{ data.invoiceNumber }}</h2>
           <p class="muted">
-            Already refunded ৳{{ data.alreadyRefundedAmount }} of ৳{{ data.totalAmount }}.
-            The server refuses quantities beyond what is returnable.
+            {{ 'sales.alreadyRefunded' | t }} {{ data.alreadyRefundedAmount | money }} {{ 'sales.ofTotal' | t }} {{ data.totalAmount | money }}.
+            {{ 'sales.returnServerNote' | t }}
           </p>
           @if (returnLoading()) {
-            <p class="muted">Loading returnable quantities…</p>
+            <p class="muted">{{ 'sales.loadingReturnable' | t }}</p>
           } @else {
             <div class="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th scope="col">Item</th>
-                    <th scope="col">Sold</th>
-                    <th scope="col">Returned</th>
-                    <th scope="col">Returnable</th>
-                    <th scope="col">Return qty</th>
+                    <th scope="col">{{ 'sales.item' | t }}</th>
+                    <th scope="col">{{ 'sales.sold' | t }}</th>
+                    <th scope="col">{{ 'sales.returned' | t }}</th>
+                    <th scope="col">{{ 'sales.returnable' | t }}</th>
+                    <th scope="col">{{ 'sales.returnQty' | t }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -115,7 +110,7 @@
                     <tr>
                       <td>
                         <strong>{{ item.medicineName }}</strong>
-                        <div class="muted small">{{ item.batchNumber }} · ≈ ৳{{ item.netPerUnit }}/unit</div>
+                        <div class="muted small">{{ item.batchNumber }} · ≈ {{ item.netPerUnit | money }}/unit</div>
                       </td>
                       <td>{{ item.soldQuantity }}</td>
                       <td>{{ item.alreadyReturnedQuantity }}</td>
@@ -137,25 +132,25 @@
             </div>
             <div class="fields">
               <label class="wide">
-                Reason
+                {{ 'sales.reason' | t }}
                 <input
                   type="text"
                   name="returnReason"
                   [(ngModel)]="returnReason"
                   maxlength="512"
-                  placeholder="Wrong item, damaged, …"
+                  [placeholder]="'sales.reasonPlaceholder' | t"
                   autocomplete="off"
                 />
               </label>
               <label>
-                Restock
+                {{ 'sales.restock' | t }}
                 <select name="returnRestock" [(ngModel)]="returnRestock">
-                  <option [ngValue]="true">Restock to original batch</option>
-                  <option [ngValue]="false">No restock (damaged)</option>
+                  <option [ngValue]="true">{{ 'sales.restockYes' | t }}</option>
+                  <option [ngValue]="false">{{ 'sales.restockNo' | t }}</option>
                 </select>
               </label>
               <label>
-                Refund method
+                {{ 'sales.refundMethod' | t }}
                 <select name="returnMethod" [(ngModel)]="returnMethod">
                   @for (method of paymentMethods; track method) {
                     <option [value]="method">{{ method }}</option>
@@ -163,28 +158,28 @@
                 </select>
               </label>
               <label>
-                Refund reference
+                {{ 'sales.refundReference' | t }}
                 <input
                   type="text"
                   name="returnReference"
                   [(ngModel)]="returnReference"
                   maxlength="64"
-                  placeholder="TrxID (non-cash)"
+                  [placeholder]="'pos.referencePlaceholder' | t"
                   autocomplete="off"
                 />
               </label>
             </div>
-            <p class="muted">Estimated refund ≈ ৳{{ estimatedRefund() }} (final amount is computed server-side).</p>
+            <p class="muted">{{ 'sales.estimatedRefund' | t }} ≈ {{ estimatedRefund() | money }} {{ 'sales.refundServerNote' | t }}</p>
             @if (returnNotice(); as message) {
               <p class="notice" role="status">{{ message }}</p>
             }
             <div class="row">
               @if (canManageReturns()) {
                 <button type="button" class="button" (click)="submitReturn()" [disabled]="returnSaving()">
-                  {{ returnSaving() ? 'Processing…' : 'Process return' }}
+                  {{ returnSaving() ? ('sales.processing' | t) : ('sales.processReturn' | t) }}
                 </button>
               }
-              <button type="button" class="button button--ghost" (click)="cancelReturn()">Close</button>
+              <button type="button" class="button button--ghost" (click)="cancelReturn()">{{ 'common.close' | t }}</button>
             </div>
           }
         </div>

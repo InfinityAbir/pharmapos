@@ -1,17 +1,19 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { PlatformApi, AuditLogEntry } from '../../core/http/platform-api.service';
+import { LDateTimePipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 
 @Component({
   selector: 'app-audit-log',
-  imports: [DatePipe],
+  imports: [TranslatePipe, LDateTimePipe],
   templateUrl: './audit-log.html',
   styleUrl: './audit-log.css',
 })
 export class AuditLogPage implements OnInit {
   private readonly api = inject(PlatformApi);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly entries = signal<readonly AuditLogEntry[]>([]);
   protected readonly loading = signal(true);
@@ -33,7 +35,7 @@ export class AuditLogPage implements OnInit {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('The audit log could not be loaded.');
+        this.error.set(this.lang.t('audit.loadFailed'));
       }
     } finally {
       this.loading.set(false);

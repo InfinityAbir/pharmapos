@@ -1,19 +1,14 @@
 <section class="page">
   <header class="page__head">
-    <p class="eyebrow">Sales</p>
-    <h1>Customers</h1>
-    <p class="lede">
-      Optional for cash sales, linked for history. Deletion is refused while sales reference a
-      customer. Writes are guarded by <code>tenant.customers.manage</code> on the server.
-    </p>
+    <p class="eyebrow">{{ 'customers.eyebrow' | t }}</p>
+    <h1>{{ 'customers.title' | t }}</h1>
+    <p class="lede">{{ 'customers.lede' | t }}</p>
   </header>
 
   @if (loading()) {
-    <p class="muted">Loading…</p>
+    <p class="muted">{{ 'common.loading' | t }}</p>
   } @else if (forbidden()) {
-    <p class="notice" role="status">
-      Your account does not have the <code>tenant.customers.read</code> permission.
-    </p>
+    <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'tenant.customers.read' } }}</p>
   } @else {
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
@@ -23,7 +18,7 @@
       <div class="panel">
         <h2>{{ history.customer.name }}</h2>
         <p class="muted">
-          {{ history.customer.phone ?? 'No phone' }}
+          {{ history.customer.phone ?? ('common.noPhone' | t) }}
           @if (history.customer.email) {
             · {{ history.customer.email }}
           }
@@ -31,57 +26,57 @@
         @if (history.customer.address) {
           <p class="muted">{{ history.customer.address }}</p>
         }
-        <h3>Recent sales</h3>
+        <h3>{{ 'customers.recentSales' | t }}</h3>
         @if (history.recentSales.length === 0) {
-          <p class="muted">No linked sales yet.</p>
+          <p class="muted">{{ 'customers.noLinkedSales' | t }}</p>
         } @else {
           <ul>
             @for (sale of history.recentSales; track sale.saleId) {
-              <li>{{ sale.invoiceNumber }} · {{ sale.occurredAtUtc | date: 'medium' }} · ৳{{ sale.totalAmount }}</li>
+              <li>{{ sale.invoiceNumber }} · {{ sale.occurredAtUtc | ldatetime }} · {{ sale.totalAmount | money }}</li>
             }
           </ul>
         }
         <div class="row">
-          <button type="button" class="button button--ghost" (click)="backToList()">Back to list</button>
+          <button type="button" class="button button--ghost" (click)="backToList()">{{ 'common.backToList' | t }}</button>
         </div>
       </div>
     }
 
     <div class="panel">
       <label>
-        Search
+        {{ 'common.search' | t }}
         <input
           type="text"
           name="search"
           [(ngModel)]="search"
           (ngModelChange)="onSearchInput()"
-          placeholder="Name or phone…"
+          [placeholder]="'customers.searchPlaceholder' | t"
           autocomplete="off"
         />
       </label>
     </div>
 
     <form class="panel" (ngSubmit)="save()">
-      <h2>{{ editingId() ? 'Edit customer' : 'New customer' }}</h2>
+      <h2>{{ editingId() ? ('customers.editCustomer' | t) : ('customers.newCustomer' | t) }}</h2>
       <div class="fields">
         <label>
-          Name
+          {{ 'common.name' | t }}
           <input type="text" name="name" [(ngModel)]="form.name" maxlength="160" autocomplete="off" />
         </label>
         <label>
-          Phone
+          {{ 'common.phone' | t }}
           <input type="text" name="phone" [(ngModel)]="form.phone" maxlength="64" autocomplete="off" />
         </label>
         <label>
-          Email
+          {{ 'common.email' | t }}
           <input type="email" name="email" [(ngModel)]="form.email" maxlength="320" autocomplete="off" />
         </label>
         <label class="wide">
-          Address
+          {{ 'common.address' | t }}
           <input type="text" name="address" [(ngModel)]="form.address" maxlength="512" autocomplete="off" />
         </label>
         <label class="wide">
-          Notes
+          {{ 'common.notes' | t }}
           <input type="text" name="notes" [(ngModel)]="form.notes" maxlength="1024" autocomplete="off" />
         </label>
       </div>
@@ -90,25 +85,25 @@
       }
       <div class="row">
         <button type="submit" class="button" [disabled]="saving()">
-          {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Create customer' }}
+          {{ saving() ? ('common.saving' | t) : editingId() ? ('common.saveChanges' | t) : ('customers.createCustomer' | t) }}
         </button>
         @if (editingId()) {
-          <button type="button" class="button button--ghost" (click)="startCreate()">Cancel</button>
+          <button type="button" class="button button--ghost" (click)="startCreate()">{{ 'common.cancel' | t }}</button>
         }
       </div>
     </form>
 
     @if (customers().length === 0) {
-      <p class="muted">No customers found.</p>
+      <p class="muted">{{ 'customers.noCustomers' | t }}</p>
     } @else {
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th scope="col">Customer</th>
-              <th scope="col">Contact</th>
-              <th scope="col">Status</th>
-              <th scope="col"><span class="sr-only">Actions</span></th>
+              <th scope="col">{{ 'customers.customer' | t }}</th>
+              <th scope="col">{{ 'common.contact' | t }}</th>
+              <th scope="col">{{ 'common.status' | t }}</th>
+              <th scope="col"><span class="sr-only">{{ 'common.actions' | t }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -131,15 +126,15 @@
                 </td>
                 <td>
                   <span class="pill" [class.pill--warn]="!customer.isActive">
-                    {{ customer.isActive ? 'Active' : 'Inactive' }}
+                    {{ customer.isActive ? ('common.active' | t) : ('common.inactive' | t) }}
                   </span>
                 </td>
                 <td class="actions">
                   <button type="button" class="button button--small" (click)="showHistory(customer)">
-                    History
+                    {{ 'common.history' | t }}
                   </button>
                   <button type="button" class="button button--small" (click)="startEdit(customer)">
-                    Edit
+                    {{ 'common.edit' | t }}
                   </button>
                   @if (customer.isActive) {
                     <button
@@ -147,7 +142,7 @@
                       class="button button--small"
                       (click)="setStatus(customer, false)"
                     >
-                      Deactivate
+                      {{ 'common.deactivate' | t }}
                     </button>
                   } @else {
                     <button
@@ -155,11 +150,11 @@
                       class="button button--small"
                       (click)="setStatus(customer, true)"
                     >
-                      Activate
+                      {{ 'common.activate' | t }}
                     </button>
                   }
                   <button type="button" class="button button--small button--danger" (click)="remove(customer)">
-                    Delete
+                    {{ 'common.delete' | t }}
                   </button>
                 </td>
               </tr>

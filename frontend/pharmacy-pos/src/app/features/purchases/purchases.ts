@@ -1,6 +1,8 @@
-import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { describeApiError } from '../../core/i18n/error-message';
+import { LDatePipe, MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { PERMISSIONS } from '../../core/auth/permissions';
@@ -47,7 +49,7 @@ function newIdempotencyKey(): string {
 
 @Component({
   selector: 'app-purchases',
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, TranslatePipe, MoneyPipe, LDatePipe],
   templateUrl: './purchases.html',
   styleUrl: './purchases.css',
 })
@@ -55,6 +57,7 @@ export class PurchasesPage implements OnInit {
   private readonly api = inject(PurchasingApi);
   private readonly catalog = inject(CatalogApi);
   protected readonly session = inject(SessionService);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly canManage = PERMISSIONS.tenantPurchasingManage;
 
@@ -140,7 +143,7 @@ export class PurchasesPage implements OnInit {
       this.detail = await firstValueFrom(this.api.getPurchase(purchase.id));
       this.view = 'detail';
     } catch (error) {
-      this.error.set('The purchase could not be loaded.');
+      this.error.set(this.lang.t('purchases.loadFailed'));
     }
   }
 
@@ -193,7 +196,7 @@ export class PurchasesPage implements OnInit {
       this.editingId = undefined;
       await this.reloadPurchases();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The draft could not be saved.'));
+      this.notice.set(this.describe(error, 'purchases.saveFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -214,7 +217,7 @@ export class PurchasesPage implements OnInit {
       await this.reloadPurchases();
       this.notice.set(`Purchase received. ${this.detail.items.length} line(s) posted to stock.`);
     } catch (error) {
-      this.notice.set(this.describe(error, 'The purchase could not be received.'));
+      this.notice.set(this.describe(error, 'purchases.receiveFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -227,7 +230,7 @@ export class PurchasesPage implements OnInit {
       this.detail = await firstValueFrom(this.api.cancelPurchase(purchase.id));
       await this.reloadPurchases();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The purchase could not be cancelled.'));
+      this.notice.set(this.describe(error, 'purchases.cancelFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -308,7 +311,7 @@ export class PurchasesPage implements OnInit {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('Purchasing data could not be loaded.');
+        this.error.set(this.lang.t('purchases.dataFailed'));
       }
     }
 
@@ -343,24 +346,12 @@ export class PurchasesPage implements OnInit {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('Purchases could not be reloaded.');
+        this.error.set(this.lang.t('purchases.reloadFailed'));
       }
     }
   }
 
-  private describe(error: unknown, fallback: string): string {
-    if (error instanceof HttpErrorResponse) {
-      const detail = (error.error as { detail?: string } | undefined)?.detail;
-      if (typeof detail === 'string' && detail.length > 0) {
-        return detail;
-      }
-      if (error.status === 409) {
-        return 'Conflicting request (duplicate name or concurrent change). Reload and retry.';
-      }
-      if (error.status === 422) {
-        return 'The operation was refused by a purchase rule (see details above).';
-      }
-    }
-    return fallback;
+  private describe(error: unknown, fallbackKey: string): string {
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

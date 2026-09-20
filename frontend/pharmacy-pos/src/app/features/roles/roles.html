@@ -1,53 +1,47 @@
 <section class="page">
   <header class="page__head">
-    <p class="eyebrow">Tenant</p>
-    <h1>Roles</h1>
-    <p class="lede">
-      Roles of the current tenant and the permissions they grant. System roles are seeded and
-      cannot be renamed or deleted. Changes are guarded by
-      <code>tenant.roles.manage</code> on the server.
-    </p>
+    <p class="eyebrow">{{ 'roles.eyebrow' | t }}</p>
+    <h1>{{ 'roles.title' | t }}</h1>
+    <p class="lede">{{ 'roles.lede' | t }}</p>
   </header>
 
   @if (loading()) {
-    <p class="muted">Loading…</p>
+    <p class="muted">{{ 'common.loading' | t }}</p>
   } @else if (forbidden()) {
-    <p class="notice" role="status">
-      Your account does not have the <code>tenant.roles.manage</code> permission.
-    </p>
+    <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'tenant.roles.manage' } }}</p>
   } @else {
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
     }
 
     <form class="panel" (ngSubmit)="save()">
-      <h2>{{ editingId() ? 'Edit role' : 'New role' }}</h2>
+      <h2>{{ editingId() ? ('roles.editRole' | t) : ('roles.newRole' | t) }}</h2>
       <div class="fields">
         <label>
-          Name
+          {{ 'common.name' | t }}
           <input
             type="text"
             name="name"
             [(ngModel)]="name"
-            placeholder="Pharmacist"
+            [placeholder]="'roles.namePlaceholder' | t"
             autocomplete="off"
             maxlength="64"
           />
         </label>
         <label>
-          Description
+          {{ 'roles.description' | t }}
           <input
             type="text"
             name="description"
             [(ngModel)]="description"
-            placeholder="What this role is for"
+            [placeholder]="'roles.descriptionPlaceholder' | t"
             autocomplete="off"
             maxlength="256"
           />
         </label>
       </div>
       <fieldset>
-        <legend>Permissions</legend>
+        <legend>{{ 'roles.permissions' | t }}</legend>
         <div class="checks">
           @for (entry of catalog; track entry.code) {
             <label class="check">
@@ -59,7 +53,7 @@
               />
               <span>
                 <code>{{ entry.code }}</code>
-                <small>{{ entry.description }}</small>
+                <small>{{ 'permdesc.' + entry.code | t }}</small>
               </span>
             </label>
           }
@@ -70,24 +64,24 @@
       }
       <div class="row">
         <button type="submit" class="button" [disabled]="saving()">
-          {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Create role' }}
+          {{ saving() ? ('common.saving' | t) : editingId() ? ('common.saveChanges' | t) : ('roles.createRole' | t) }}
         </button>
         @if (editingId()) {
-          <button type="button" class="button button--ghost" (click)="startCreate()">Cancel</button>
+          <button type="button" class="button button--ghost" (click)="startCreate()">{{ 'common.cancel' | t }}</button>
         }
       </div>
     </form>
 
     @if (roles().length === 0) {
-      <p class="muted">No roles defined for this tenant yet.</p>
+      <p class="muted">{{ 'roles.noRoles' | t }}</p>
     } @else {
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th scope="col">Role</th>
-              <th scope="col">Permissions</th>
-              <th scope="col"><span class="sr-only">Actions</span></th>
+              <th scope="col">{{ 'roles.role' | t }}</th>
+              <th scope="col">{{ 'roles.permissions' | t }}</th>
+              <th scope="col"><span class="sr-only">{{ 'common.actions' | t }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -96,7 +90,7 @@
                 <td>
                   <strong>{{ role.name }}</strong>
                   @if (role.isSystem) {
-                    <span class="pill">system</span>
+                    <span class="pill">{{ 'roles.system' | t }}</span>
                   }
                   @if (role.description) {
                     <div class="muted small">{{ role.description }}</div>
@@ -110,16 +104,16 @@
                       }
                     </ul>
                   } @else {
-                    <span class="muted">No permissions yet.</span>
+                    <span class="muted">{{ 'roles.noPermissions' | t }}</span>
                   }
                 </td>
                 <td class="actions">
                   <button type="button" class="button button--small" (click)="startEdit(role)">
-                    Edit
+                    {{ 'common.edit' | t }}
                   </button>
                   @if (!role.isSystem) {
                     <button type="button" class="button button--small button--danger" (click)="remove(role)">
-                      Delete
+                      {{ 'common.delete' | t }}
                     </button>
                   }
                 </td>

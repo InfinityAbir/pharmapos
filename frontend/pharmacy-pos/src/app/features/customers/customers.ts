@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -9,15 +8,19 @@ import {
   CustomerWithHistory,
   CustomersApi,
 } from '../../core/http/customers-api.service';
+import { describeApiError } from '../../core/i18n/error-message';
+import { LDateTimePipe, MoneyPipe, TranslatePipe } from '../../core/i18n/i18n.pipes';
+import { LanguageService } from '../../core/i18n/language.service';
 
 @Component({
   selector: 'app-customers',
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, TranslatePipe, MoneyPipe, LDateTimePipe],
   templateUrl: './customers.html',
   styleUrl: './customers.css',
 })
 export class CustomersPage implements OnInit, OnDestroy {
   private readonly api = inject(CustomersApi);
+  protected readonly lang = inject(LanguageService);
 
   protected readonly customers = signal<readonly Customer[]>([]);
   protected readonly detail = signal<CustomerWithHistory | undefined>(undefined);
@@ -72,7 +75,7 @@ export class CustomersPage implements OnInit, OnDestroy {
 
     const input = CustomersPage.normalise(this.form);
     if (!input.name) {
-      this.notice.set('A customer name is required.');
+      this.notice.set(this.lang.t('customers.nameRequired'));
       return;
     }
 
@@ -87,7 +90,7 @@ export class CustomersPage implements OnInit, OnDestroy {
       this.startCreate();
       await this.reload();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The customer could not be saved.'));
+      this.notice.set(this.describe(error, 'customers.saveFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -99,7 +102,7 @@ export class CustomersPage implements OnInit, OnDestroy {
       await firstValueFrom(this.api.setCustomerStatus(customer.id, isActive));
       await this.reload();
     } catch (error) {
-      this.notice.set(this.describe(error, 'The customer status could not be changed.'));
+      this.notice.set(this.describe(error, 'customers.statusFailed'));
     }
   }
 
@@ -115,9 +118,7 @@ export class CustomersPage implements OnInit, OnDestroy {
       }
       await this.reload();
     } catch (error) {
-      this.notice.set(
-        this.describe(error, 'The customer could not be deleted (linked sales block deletion).'),
-      );
+      this.notice.set(this.describe(error, 'customers.deleteFailed'));
     }
   }
 
@@ -126,7 +127,7 @@ export class CustomersPage implements OnInit, OnDestroy {
     try {
       this.detail.set(await firstValueFrom(this.api.getCustomer(customer.id)));
     } catch {
-      this.error.set('The customer history could not be loaded.');
+      this.error.set(this.lang.t('customers.historyFailed'));
     }
   }
 
@@ -163,7 +164,7 @@ export class CustomersPage implements OnInit, OnDestroy {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('Customers could not be loaded.');
+        this.error.set(this.lang.t('customers.loadFailed'));
       }
     } finally {
       this.loading.set(false);
@@ -180,23 +181,18 @@ export class CustomersPage implements OnInit, OnDestroy {
       if (error instanceof HttpErrorResponse && error.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set('Customers could not be reloaded.');
+        this.error.set(this.lang.t('customers.reloadFailed'));
       }
     }
   }
 
-  private describe(error: unknown, fallback: string): string {
+  private describe(error: unknown, fallbackKey: string): string {
     if (error instanceof HttpErrorResponse) {
-      const body = error.error as
-        | { detail?: string; title?: string; code?: string }
-        | undefined;
-      if (typeof body?.detail === 'string' && body.detail.length > 0) {
-        return body.detail;
-      }
-      if (error.status === 409) {
-        return 'Another customer already uses this phone number.';
+      const body = (error.error ?? {}) as { code?: string };
+      if (!body.code && error.status === 409) {
+        return this.lang.t('customers.phoneConflict');
       }
     }
-    return fallback;
+    return describeApiError(this.lang, error, fallbackKey);
   }
 }

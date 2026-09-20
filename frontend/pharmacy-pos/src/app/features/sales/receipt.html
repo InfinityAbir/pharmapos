@@ -10,23 +10,23 @@
   </header>
 
   <dl class="receipt__meta">
-    <div><dt>Invoice</dt><dd>{{ receipt.sale.invoiceNumber }}</dd></div>
-    <div><dt>Date</dt><dd>{{ receipt.sale.occurredAtUtc | date: 'medium' }}</dd></div>
+    <div><dt>{{ 'receipt.invoice' | t }}</dt><dd>{{ receipt.sale.invoiceNumber }}</dd></div>
+    <div><dt>{{ 'receipt.date' | t }}</dt><dd>{{ receipt.sale.occurredAtUtc | ldatetime }}</dd></div>
     @if (receipt.sale.cashierSubject) {
-      <div><dt>Cashier</dt><dd>{{ receipt.sale.cashierSubject }}</dd></div>
+      <div><dt>{{ 'receipt.cashier' | t }}</dt><dd>{{ receipt.sale.cashierSubject }}</dd></div>
     }
     @if (receipt.sale.customerName) {
-      <div><dt>Customer</dt><dd>{{ receipt.sale.customerName }}</dd></div>
+      <div><dt>{{ 'receipt.customer' | t }}</dt><dd>{{ receipt.sale.customerName }}</dd></div>
     }
   </dl>
 
   <table>
     <thead>
       <tr>
-        <th scope="col">Item</th>
-        <th scope="col">Qty</th>
-        <th scope="col">Price</th>
-        <th scope="col">Total</th>
+        <th scope="col">{{ 'receipt.item' | t }}</th>
+        <th scope="col">{{ 'receipt.qty' | t }}</th>
+        <th scope="col">{{ 'receipt.price' | t }}</th>
+        <th scope="col">{{ 'receipt.total' | t }}</th>
       </tr>
     </thead>
     <tbody>
@@ -37,27 +37,27 @@
             <div class="muted small">{{ item.batchNumber }}</div>
           </td>
           <td>{{ item.quantity }}</td>
-          <td class="nowrap">৳{{ item.unitPrice }}</td>
-          <td class="nowrap">৳{{ item.lineTotal }}</td>
+          <td class="nowrap">{{ item.unitPrice | money }}</td>
+          <td class="nowrap">{{ item.lineTotal | money }}</td>
         </tr>
       }
     </tbody>
   </table>
 
   <dl class="receipt__totals">
-    <div><dt>Subtotal</dt><dd>৳{{ receipt.sale.subtotal }}</dd></div>
+    <div><dt>{{ 'receipt.subtotal' | t }}</dt><dd>{{ receipt.sale.subtotal | money }}</dd></div>
     @if (receipt.sale.discountAmount > 0) {
-      <div><dt>Discount</dt><dd>−৳{{ receipt.sale.discountAmount }}</dd></div>
+      <div><dt>{{ 'receipt.discount' | t }}</dt><dd>−{{ receipt.sale.discountAmount | money }}</dd></div>
     }
-    <div class="grand"><dt>Total</dt><dd>৳{{ receipt.sale.totalAmount }}</dd></div>
+    <div class="grand"><dt>{{ 'receipt.grandTotal' | t }}</dt><dd>{{ receipt.sale.totalAmount | money }}</dd></div>
     @for (payment of receipt.sale.payments; track payment.id) {
       <div>
         <dt>{{ payment.method }}{{ payment.reference ? ' · ' + payment.reference : '' }}</dt>
-        <dd>৳{{ payment.amount }}</dd>
+        <dd>{{ payment.amount | money }}</dd>
       </div>
     }
     @if (receipt.sale.changeDue > 0) {
-      <div><dt>Change</dt><dd>৳{{ receipt.sale.changeDue }}</dd></div>
+      <div><dt>{{ 'receipt.change' | t }}</dt><dd>{{ receipt.sale.changeDue | money }}</dd></div>
     }
   </dl>
 
@@ -65,5 +65,5 @@
     <p class="receipt__footer">{{ receipt.pharmacy.invoiceFooter }}</p>
   }
 
-  <button type="button" class="button no-print" (click)="print()">Print receipt</button>
+  <button type="button" class="button no-print" (click)="print()">{{ 'receipt.print' | t }}</button>
 </article>

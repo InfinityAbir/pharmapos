@@ -1,20 +1,14 @@
 <section class="page">
   <header class="page__head">
-    <p class="eyebrow">Inventory</p>
-    <h1>Stock</h1>
-    <p class="lede">
-      Batch-level quantities with expiry, summed per medicine. Every change writes a ledger row.
-      Receipts, adjustments and expiry are guarded by
-      <code>tenant.inventory.manage</code> on the server.
-    </p>
+    <p class="eyebrow">{{ 'inventory.eyebrow' | t }}</p>
+    <h1>{{ 'inventory.title' | t }}</h1>
+    <p class="lede">{{ 'inventory.lede' | t }}</p>
   </header>
 
   @if (loading()) {
-    <p class="muted">Loading…</p>
+    <p class="muted">{{ 'common.loading' | t }}</p>
   } @else if (forbidden()) {
-    <p class="notice" role="status">
-      Your account does not have the <code>tenant.inventory.read</code> permission.
-    </p>
+    <p class="notice" role="status">{{ 'common.noPermission' | t: { code: 'tenant.inventory.read' } }}</p>
   } @else {
     @if (error(); as message) {
       <p class="alert" role="alert">{{ message }}</p>
@@ -24,15 +18,15 @@
       <div class="cards">
         <article class="stat" [class.stat--warn]="alerts.lowStockCount > 0">
           <strong>{{ alerts.lowStockCount }}</strong>
-          <span>low-stock medicines</span>
+          <span>{{ 'inventory.lowStockMedicines' | t }}</span>
         </article>
         <article class="stat" [class.stat--warn]="alerts.expiringWithin30DaysCount > 0">
           <strong>{{ alerts.expiringWithin30DaysCount }}</strong>
-          <span>batches expiring ≤ 30 days</span>
+          <span>{{ 'inventory.expiringBatches' | t }}</span>
         </article>
         <article class="stat" [class.stat--bad]="alerts.expiredBatchCount > 0">
           <strong>{{ alerts.expiredBatchCount }}</strong>
-          <span>expired batches in stock</span>
+          <span>{{ 'inventory.expiredBatches' | t }}</span>
         </article>
       </div>
     }
@@ -40,13 +34,13 @@
     <div class="panel">
       <div class="fields fields--filters">
         <label>
-          Search
+          {{ 'common.search' | t }}
           <input
             type="text"
             name="search"
             [(ngModel)]="search"
             (ngModelChange)="onSearchInput()"
-            placeholder="Brand or generic…"
+            [placeholder]="'inventory.searchPlaceholder' | t"
             autocomplete="off"
           />
         </label>
@@ -57,22 +51,22 @@
             [(ngModel)]="lowStockOnly"
             (ngModelChange)="onFilterChange()"
           />
-          Low stock only
+          {{ 'inventory.lowStockOnly' | t }}
         </label>
       </div>
     </div>
 
     @if (stock().length === 0) {
-      <p class="muted">No medicines in stock view. Receive stock per batch below.</p>
+      <p class="muted">{{ 'inventory.noStock' | t }}</p>
     } @else {
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th scope="col">Medicine</th>
-              <th scope="col">On hand</th>
-              <th scope="col">Reorder at</th>
-              <th scope="col">Batches</th>
+              <th scope="col">{{ 'inventory.medicine' | t }}</th>
+              <th scope="col">{{ 'inventory.onHand' | t }}</th>
+              <th scope="col">{{ 'inventory.reorderAt' | t }}</th>
+              <th scope="col">{{ 'inventory.batches' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -86,7 +80,7 @@
                 <td>
                   <strong>{{ row.brandName }} {{ row.strength }}</strong>
                   @if (row.isLowStock) {
-                    <span class="pill pill--warn">low stock</span>
+                    <span class="pill pill--warn">{{ 'inventory.lowStock' | t }}</span>
                   }
                 </td>
                 <td>
@@ -104,7 +98,7 @@
     @if (selectedMedicine(); as medicine) {
       <section class="panel">
         <h2>
-          {{ medicine.brandName }} {{ medicine.strength }} — {{ medicine.totalQuantity }} on hand
+          {{ medicine.brandName }} {{ medicine.strength }} — {{ medicine.totalQuantity }} {{ 'inventory.onHandSuffix' | t }}
         </h2>
 
         @if (notice(); as message) {
@@ -113,10 +107,10 @@
 
         @if (hasPermission(canManage)) {
           <form class="receive" (ngSubmit)="saveReceive()">
-            <h3>Receive stock</h3>
+            <h3>{{ 'inventory.receiveTitle' | t }}</h3>
             <div class="fields">
               <label>
-                Batch number
+                {{ 'inventory.batchNumber' | t }}
                 <input
                   type="text"
                   name="batchNumber"
@@ -126,11 +120,11 @@
                 />
               </label>
               <label>
-                Quantity
+                {{ 'inventory.quantity' | t }}
                 <input type="number" name="quantity" [(ngModel)]="receive.quantity" min="1" step="1" />
               </label>
               <label>
-                Purchase price (BDT)
+                {{ 'inventory.purchasePrice' | t }}
                 <input
                   type="number"
                   name="purchasePrice"
@@ -140,7 +134,7 @@
                 />
               </label>
               <label>
-                Selling price (BDT)
+                {{ 'inventory.sellingPrice' | t }}
                 <input
                   type="number"
                   name="sellingPrice"
@@ -150,15 +144,15 @@
                 />
               </label>
               <label>
-                Manufacture date
+                {{ 'inventory.manufactureDate' | t }}
                 <input type="date" name="manufactureDate" [(ngModel)]="receive.manufactureDate" />
               </label>
               <label>
-                Expiry date
+                {{ 'inventory.expiryDate' | t }}
                 <input type="date" name="expiryDate" [(ngModel)]="receive.expiryDate" />
               </label>
               <label>
-                Supplier
+                {{ 'inventory.supplier' | t }}
                 <input
                   type="text"
                   name="supplierName"
@@ -168,7 +162,7 @@
                 />
               </label>
               <label>
-                Purchase reference
+                {{ 'inventory.purchaseReference' | t }}
                 <input
                   type="text"
                   name="purchaseReference"
@@ -179,24 +173,24 @@
               </label>
             </div>
             <button type="submit" class="button" [disabled]="saving()">
-              {{ saving() ? 'Receiving…' : 'Receive stock' }}
+              {{ saving() ? ('inventory.receiving' | t) : ('inventory.receiveTitle' | t) }}
             </button>
           </form>
         }
 
-        <h3>Batches</h3>
+        <h3>{{ 'inventory.batches' | t }}</h3>
         @if (batches().length === 0) {
-          <p class="muted">No batches recorded for this medicine yet.</p>
+          <p class="muted">{{ 'inventory.noBatches' | t }}</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Batch</th>
-                  <th scope="col">Qty</th>
-                  <th scope="col">Expiry</th>
-                  <th scope="col">Price</th>
-                  <th scope="col">Supplier</th>
+                  <th scope="col">{{ 'inventory.batch' | t }}</th>
+                  <th scope="col">{{ 'inventory.qty' | t }}</th>
+                  <th scope="col">{{ 'inventory.expiry' | t }}</th>
+                  <th scope="col">{{ 'inventory.price' | t }}</th>
+                  <th scope="col">{{ 'inventory.supplier' | t }}</th>
                   @if (hasPermission(canManage)) {
                     <th scope="col" aria-label="Actions"></th>
                   }
@@ -208,14 +202,14 @@
                     <td>
                       <code>{{ batch.batchNumber }}</code>
                       @if (batch.isExpired) {
-                        <span class="pill pill--bad">expired</span>
+                        <span class="pill pill--bad">{{ 'inventory.expired' | t }}</span>
                       }
                     </td>
                     <td>
                       <strong>{{ batch.quantity }}</strong>
                     </td>
-                    <td class="nowrap">{{ batch.expiryDate | date: 'mediumDate' }}</td>
-                    <td class="nowrap">৳{{ batch.sellingPrice }}</td>
+                    <td class="nowrap">{{ batch.expiryDate | ldate }}</td>
+                    <td class="nowrap">{{ batch.sellingPrice | money }}</td>
                     <td>{{ batch.supplierName ?? '—' }}</td>
                     @if (hasPermission(canManage)) {
                       <td class="actions">
@@ -224,7 +218,7 @@
                           class="button button--small"
                           (click)="startAdjust(batch)"
                         >
-                          Adjust
+                          {{ 'inventory.adjust' | t }}
                         </button>
                         @if (batch.quantity > 0) {
                           <button
@@ -233,7 +227,7 @@
                             (click)="expire(batch)"
                             [disabled]="saving()"
                           >
-                            Expire
+                            {{ 'inventory.expire' | t }}
                           </button>
                         }
                       </td>
@@ -244,37 +238,37 @@
                       <td colspan="6">
                         <form class="inline" (ngSubmit)="saveAdjust(batch)">
                           <label>
-                            Quantity change
+                            {{ 'inventory.quantityChange' | t }}
                             <input
                               type="number"
                               name="adjustQty"
                               [(ngModel)]="adjustQty"
                               step="1"
-                              placeholder="+5 / -3"
-                              aria-label="Quantity change"
+                              [placeholder]="'inventory.quantityChangePlaceholder' | t"
+                              [attr.aria-label]="'inventory.quantityChange' | t"
                             />
                           </label>
                           <label>
-                            Reason
+                            {{ 'inventory.adjustReason' | t }}
                             <input
                               type="text"
                               name="adjustReason"
                               [(ngModel)]="adjustReason"
                               maxlength="256"
-                              placeholder="Damaged, recount…"
+                              [placeholder]="'inventory.adjustReasonPlaceholder' | t"
                               autocomplete="off"
-                              aria-label="Adjustment reason"
+                              [attr.aria-label]="'inventory.adjustReason' | t"
                             />
                           </label>
                           <button type="submit" class="button button--small" [disabled]="saving()">
-                            {{ saving() ? 'Saving…' : 'Save' }}
+                            {{ saving() ? ('common.saving' | t) : ('common.save' | t) }}
                           </button>
                           <button
                             type="button"
                             class="button button--small button--ghost"
                             (click)="cancelAdjust()"
                           >
-                            Cancel
+                            {{ 'common.cancel' | t }}
                           </button>
                         </form>
                       </td>
@@ -286,9 +280,9 @@
           </div>
         }
 
-        <h3>Recent movements</h3>
+        <h3>{{ 'inventory.recentMovements' | t }}</h3>
         @if (movements().length === 0) {
-          <p class="muted">No movements recorded for this medicine.</p>
+          <p class="muted">{{ 'inventory.noMovements' | t }}</p>
         } @else {
           <ul class="moves">
             @for (movement of movements(); track movement.id) {
@@ -298,14 +292,14 @@
                   {{ movement.quantityChange > 0 ? '+' : '' }}{{ movement.quantityChange }}
                 </span>
                 <span class="muted small">
-                  {{ movement.batchNumber }} · after: {{ movement.quantityAfter }}
+                  {{ movement.batchNumber }} · {{ 'inventory.after' | t }} {{ movement.quantityAfter }}
                   @if (movement.reason) {
                     · {{ movement.reason }}
                   }
                   @if (movement.actorSubject) {
                     · {{ movement.actorSubject }}
                   }
-                  · {{ movement.occurredAtUtc | date: 'short' }}
+                  · {{ movement.occurredAtUtc | ldatetime }}
                 </span>
               </li>
             }
