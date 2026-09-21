@@ -3,6 +3,7 @@ using Finbuckle.MultiTenant.AspNetCore.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -189,7 +190,26 @@ var app = builder.Build();
 
 // ---------------------------------------------------------------------------------------------
 // Request pipeline.
+//
+// When hosted behind the production reverse proxy (see docker-compose.prod.yml), TLS is
+// terminated at the proxy and the original scheme/client IP arrive as X-Forwarded-*
+// headers. Honor them first so HTTPS redirection, HSTS, IP-based rate limiting, audit
+// IPs and request logs observe the real client values. The proxy strips any inbound
+// X-Forwarded-* headers from external clients, and the API container only trusts traffic
+// from the internal compose network.
 // ---------------------------------------------------------------------------------------------
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+};
+
+// The API container has no fixed proxy address (compose-assigned IPs change per deploy),
+// so the loopback-only default would silently ignore the proxy headers. Trust headers from
+// the internal compose network instead: the proxy strips client-supplied X-Forwarded-*
+// headers at the edge, and the API port is not published publicly in production.
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
 app.UseSerilogRequestLogging();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();

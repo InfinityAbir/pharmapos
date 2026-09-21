@@ -43,6 +43,9 @@ tests/E2ETests/blob-report/
 .env
 .env.*
 !.env.example
+!.env.production.example
+# Filled production SPA runtime config (the .example template is committed).
+deploy/web/config.prod.json
 *.pfx
 *.pem
 *.key

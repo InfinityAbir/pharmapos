@@ -85,3 +85,96 @@ jobs:
 
       - name: Build web image
         run: docker build -f frontend/pharmacy-pos/Dockerfile -t pharmapos-web:ci frontend/pharmacy-pos
+
+  production:
+    name: Production artifacts (compose + migrations + proxy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: '**/Directory.Packages.props'
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+
+      # A broken migration must fail the pipeline, never the deploy.
+      # Bundles are the production migration vehicle (see scripts/migrate-prod.sh).
+      - name: Build migration bundles
+        run: |
+          mkdir -p artifacts
+          dotnet ef migrations bundle \
+            --project src/PharmaPOS.Infrastructure \
+            --startup-project src/PharmaPOS.Api \
+            --context TenantStoreDbContext \
+            --output artifacts/efbundle-tenantstore --self-contained -r linux-x64 -f
+          dotnet ef migrations bundle \
+            --project src/PharmaPOS.Infrastructure \
+            --startup-project src/PharmaPOS.Api \
+            --context AppDbContext \
+            --output artifacts/efbundle-app --self-contained -r linux-x64 -f
+
+      - name: Upload migration bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: ef-migration-bundles
+          path: artifacts/efbundle-*
+          if-no-files-found: error
+
+      # Dummy-but-present values satisfy every `:?` guard so `config` proves the
+      # production file is structurally valid.
+      - name: Validate production compose file
+        env:
+          PUBLIC_HOST: ci.example.com
+          POSTGRES_DB: pharmapos
+          POSTGRES_USER: pharmapos
+          POSTGRES_PASSWORD: ci-dummy-password-32-chars-minimum
+          KC_DB_NAME: keycloak
+          KC_DB_USER: keycloak
+          KC_DB_PASSWORD: ci-dummy-password-32-chars-minimum
+          KEYCLOAK_ADMIN: admin
+          KEYCLOAK_ADMIN_PASSWORD: ci-dummy-password-32-chars-minimum
+          KEYCLOAK_HOSTNAME: https://ci.example.com
+          KEYCLOAK_PUBLIC_ISSUER: https://ci.example.com/realms/pharmapos
+        run: docker compose -f docker-compose.prod.yml config -q
+
+      # Render the proxy template the same way the nginx entrypoint does and
+      # assert the security-critical blocks survived.
+      - name: Validate proxy template
+        env:
+          PUBLIC_HOST: ci.example.com
+          KEYCLOAK_PUBLIC_HOST: ci.example.com
+        run: |
+          python3 - <<'EOF'
+          import os, re
+          template = open('deploy/proxy/nginx.prod.conf.template').read()
+          rendered = re.sub(r'\$\{(\w+)(?::-[^}]*)?\}', lambda m: os.environ.get(m.group(1), ''), template)
+          assert '${' not in rendered, 'unsubstituted variable remains in proxy template'
+          for required in [
+              'listen 443 ssl', 'Strict-Transport-Security', 'Content-Security-Policy',
+              'location /api/', 'location = /healthz', 'proxy_set_header X-Forwarded-For $remote_addr',
+              'proxy_set_header X-Forwarded-Proto $scheme', 'return 301 https://',
+              'location ~ ^/(realms|resources|js|admin)/',
+          ]:
+              assert required in rendered, f'missing proxy block: {required}'
+          assert '$proxy_add_x_forwarded_for' not in rendered, 'spoofable append-style forwarding detected'
+          print('proxy template OK')
+          EOF
+
+      - name: Guard production defaults
+        run: |
+          python3 - <<'EOF'
+          import json
+          prod = json.load(open('src/PharmaPOS.Api/appsettings.Production.json'))
+          assert prod['Database']['ApplyMigrationsOnStartup'] is False, 'startup auto-migrate must stay OFF in production'
+          assert prod['Database']['SeedDemoData'] is False, 'demo seed must stay OFF in production'
+          assert prod['Keycloak']['RequireHttpsMetadata'] is True, 'HTTPS metadata must stay required in production'
+          assert prod['Cors']['AllowedOrigins'] == [], 'CORS allow-list must be empty by default in production'
+          assert prod['ConnectionStrings']['Database'] == '', 'connection string must come from secrets in production'
+          assert prod['Keycloak']['Authority'] == '', 'Keycloak authority must come from environment in production'
+          print('production defaults OK')
+          EOF

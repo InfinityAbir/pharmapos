@@ -1,0 +1,9 @@
+{
+  "_comment": "TEMPLATE — copy to config.prod.json and set real public URLs. This file is mounted into the web container at /usr/share/nginx/html/config.json (see docker-compose.prod.yml), so the SAME web image can be promoted across environments without rebuilding.",
+  "apiBaseUrl": "https://pos.example.com/api/v1",
+  "oidc": {
+    "url": "https://pos.example.com",
+    "realm": "pharmapos",
+    "clientId": "pharmapos-web"
+  }
+}

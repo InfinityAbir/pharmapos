@@ -1,0 +1,146 @@
+# PharmaPOS production reverse proxy (nginx).
+#
+# Rendered by the nginx image entrypoint with envsubst from PUBLIC_HOST and
+# KEYCLOAK_PUBLIC_HOST. Terminates TLS at the edge; the API and SPA only ever
+# see plain HTTP on the internal compose network.
+#
+# Forwarded-header hygiene: X-Forwarded-For/Proto are OVERWRITTEN (not appended),
+# so a client-supplied spoofed header can never reach the API. The API trusts
+# these headers from the internal network only (see Program.cs).
+
+upstream api {
+    server api:8080 max_fails=3 fail_timeout=30s;
+}
+
+upstream web {
+    server web:80 max_fails=3 fail_timeout=30s;
+}
+
+upstream keycloak {
+    server keycloak:8080 max_fails=3 fail_timeout=30s;
+}
+
+# Defense-in-depth request cap for the JSON API (the API also rate-limits per user/IP).
+limit_req_zone $binary_remote_addr zone=api:10m rate=30r/s;
+
+# --- Plain HTTP: redirect everything to HTTPS (except ACME challenges). --------
+server {
+    listen 80;
+    server_name ${PUBLIC_HOST};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# --- HTTPS --------------------------------------------------------------------
+server {
+    listen 443 ssl;
+    server_name ${PUBLIC_HOST};
+
+    ssl_certificate /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # Edge security headers (API sets its own stricter JSON policy; these cover
+    # the SPA and Keycloak pages served through the proxy).
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # SPA content policy: same-origin plus the public Keycloak origin for OIDC
+    # redirects/metadata. No inline scripts, no plugins, no framing.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://${KEYCLOAK_PUBLIC_HOST}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://${KEYCLOAK_PUBLIC_HOST}" always;
+
+    client_max_body_size 5m;
+
+    # Proxy's own liveness probe (does not touch upstream).
+    location = /healthz {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+
+    # --- JSON API ----------------------------------------------------------
+    location /api/ {
+        limit_req zone=api burst=60 nodelay;
+
+        proxy_pass http://api;
+        proxy_http_version 1.1;
+
+        # Overwrite (never append): spoof-proof single-hop chain.
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    # API health for load-balancer checks (unauthenticated by design).
+    location = /health {
+        proxy_pass http://api/health;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        access_log off;
+    }
+
+    location = /health/ready {
+        proxy_pass http://api/health/ready;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        access_log off;
+    }
+
+    # --- Keycloak public surface (OIDC discovery, login pages, theme assets).
+    # Admin console (/admin) is reachable here too; restrict it at the firewall
+    # or front it with client-cert/IP allow-listing per docs/production.md.
+    location ~ ^/(realms|resources|js|admin)/ {
+        proxy_pass http://keycloak;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # --- SPA (Angular). Never cached: entry HTML + runtime config. ---------
+    location = /config.json {
+        proxy_pass http://web/config.json;
+        add_header Cache-Control "no-store" always;
+    }
+
+    location = /index.html {
+        proxy_pass http://web/index.html;
+        add_header Cache-Control "no-store" always;
+    }
+
+    location / {
+        proxy_pass http://web;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
