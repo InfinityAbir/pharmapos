@@ -26,6 +26,10 @@ if not exist .env (
   exit /b 1
 )
 
+rem --- 2b. Backfill keys added to .env.example after .env was created ------------
+rem (e.g. KEYCLOAK_CLIENT_SECRET). Missing keys are appended with example values.
+powershell -NoProfile -Command "$have=@{}; Get-Content .\.env | ForEach-Object { if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=') { $have[$Matches[1]]=$true } }; Get-Content .\.env.example | ForEach-Object { if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$' -and -not $have.ContainsKey($Matches[1])) { Add-Content .\.env $_; Write-Output ('  backfilled missing key from .env.example: ' + $Matches[1]) } }"
+
 rem Read ports from .env (defaults match .env.example).
 set FRONTEND_PORT=4200
 set API_PORT=8080
