@@ -308,10 +308,12 @@ label {
 }
 
 input[type='text'],
+input[type='password'],
+input[type='email'],
+input[type='search'],
 input[type='number'],
 input[type='date'],
 input[type='tel'],
-input[type='email'],
 input:not([type]),
 select,
 textarea {

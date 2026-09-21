@@ -124,16 +124,18 @@
       </nav>
     }
 
-    <button
-      type="button"
-      class="sidebar__collapse"
-      (click)="toggleSidebar()"
-      [title]="sidebarCollapsed() ? ('shell.expand' | t) : ('shell.collapse' | t)"
-      [attr.aria-label]="sidebarCollapsed() ? ('shell.expand' | t) : ('shell.collapse' | t)"
-      [attr.aria-expanded]="!sidebarCollapsed()"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
-    </button>
+    @if (keycloak.isAuthenticated()) {
+      <button
+        type="button"
+        class="icon-button sidebar__collapse"
+        (click)="toggleSidebar()"
+        [title]="sidebarCollapsed() ? ('shell.expand' | t) : ('shell.collapse' | t)"
+        [attr.aria-label]="sidebarCollapsed() ? ('shell.expand' | t) : ('shell.collapse' | t)"
+        [attr.aria-expanded]="!sidebarCollapsed()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+    }
   </aside>
 
   <div class="main">
