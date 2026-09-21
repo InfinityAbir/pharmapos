@@ -26,7 +26,10 @@ function configure(authenticated: boolean, whoami: () => ReturnType<PlatformApi[
       { provide: PlatformApi, useValue: { whoami } },
       {
         provide: KeycloakService,
-        useValue: { isAuthenticated: signal(authenticated).asReadonly() },
+        useValue: {
+          isAuthenticated: signal(authenticated).asReadonly(),
+          hasPermission: (permission: string) => context.permissions.includes(permission),
+        },
       },
     ],
   });
@@ -58,7 +61,9 @@ describe('SessionService', () => {
     expect(session.loaded()).toBe(true);
     expect(session.context()).toBeUndefined();
     expect(session.forbidden()).toBe(true);
-    expect(session.hasPermission('platform.audit.read')).toBe(false);
+    // Visibility stays token-derived: realm roles still describe the caller even when this
+    // tenant has no membership row for them (the API answers 403 on data calls).
+    expect(session.hasPermission('platform.audit.read')).toBe(true);
   });
 
   it('reports an error when the session cannot be reached', async () => {

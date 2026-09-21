@@ -10,7 +10,11 @@ export interface OidcConfig {
 
 export interface AppConfig {
   readonly apiBaseUrl: string;
-  readonly oidc: OidcConfig;
+  /**
+   * Legacy OIDC block, ignored since the SPA authenticates through the API's
+   * app-owned login. Optional so older config.json files keep loading.
+   */
+  readonly oidc?: OidcConfig;
 }
 
 /**

@@ -11,6 +11,7 @@ public enum ErrorCategory
     Conflict = 2,
     Forbidden = 3,
     BusinessRule = 4,
+    Unauthorized = 5,
 }
 
 /// <summary>

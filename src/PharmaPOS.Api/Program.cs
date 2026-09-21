@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.RateLimiting;
 using Finbuckle.MultiTenant.AspNetCore.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,9 +10,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PharmaPOS.Api.Authentication;
-using PharmaPOS.Api.Configuration;
 using PharmaPOS.Api.Middleware;
 using PharmaPOS.Application;
+using PharmaPOS.Application.Common.Identity;
 using PharmaPOS.Infrastructure;
 using PharmaPOS.Infrastructure.Persistence;
 using Serilog;
@@ -42,8 +44,10 @@ builder.Services
 
 // ---------------------------------------------------------------------------------------------
 // Authentication: Keycloak-issued JWT access tokens only.
-// The API validates tokens; it never issues, refreshes or rotates tokens (Keycloak owns the
-// token lifecycle: short-lived access tokens + rotating refresh tokens with reuse detection).
+// The API validates tokens; login/refresh/registration go through AuthController, which proxies
+// Keycloak server-side so the confidential client secret never reaches the browser.
+// Authorization reads Keycloak realm roles (mapped to role claims below); the token proves who
+// the caller is AND what they may do, while tenant_id still selects the tenant context.
 // ---------------------------------------------------------------------------------------------
 var keycloak = builder.Configuration.GetSection(KeycloakOptions.SectionName).Get<KeycloakOptions>()
     ?? new KeycloakOptions();
@@ -62,7 +66,7 @@ builder.Services
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.FromSeconds(30),
-            RoleClaimType = "roles",
+            RoleClaimType = ClaimTypes.Role,
             NameClaimType = "preferred_username",
         };
 
@@ -86,6 +90,19 @@ builder.Services
                         "Token validation failed for {Method} {Path}",
                         context.HttpContext.Request.Method,
                         context.HttpContext.Request.Path);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                // Keycloak realm roles arrive either in the standard realm_access.roles blob or in
+                // this realm's "roles" array claim (see the realm-roles protocol mapper). Copy both
+                // shapes across as role claims so role-based authorization sees them.
+                if (context.Principal?.Identity is ClaimsIdentity identity)
+                {
+                    KeycloakRoleMapping.MapRoleArrayClaim(identity, "realm_access", "roles");
+                    KeycloakRoleMapping.MapRoleArrayClaim(identity, null, "roles");
+                }
+
                 return Task.CompletedTask;
             },
         };
@@ -258,3 +275,65 @@ await app.RunAsync();
 
 /// <summary>Exposed so integration tests can host the API via <c>WebApplicationFactory</c>.</summary>
 public partial class Program;
+
+/// <summary>
+/// Copies realm role names into role claims. <c>containerClaim</c> names a JSON-blob claim
+/// holding a <c>roles</c> array (standard <c>realm_access</c>); when null, the named claim itself
+/// is read (repeated claims, or a single JSON-array value).
+/// </summary>
+internal static class KeycloakRoleMapping
+{
+    internal static void MapRoleArrayClaim(ClaimsIdentity identity, string? containerClaim, string claimName)
+    {
+        foreach (var claim in identity.FindAll(containerClaim ?? claimName))
+        {
+            if (containerClaim is not null && claim.Type != containerClaim)
+            {
+                continue;
+            }
+
+            foreach (var roleName in ReadRoleNames(claim.Value))
+            {
+                if (!identity.HasClaim(ClaimTypes.Role, roleName))
+                {
+                    identity.AddClaim(new Claim(ClaimTypes.Role, roleName));
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<string> ReadRoleNames(string value)
+    {
+        var trimmed = value.Trim();
+        if (trimmed.StartsWith('['))
+        {
+            List<string>? names = null;
+            try
+            {
+                using var json = JsonDocument.Parse(trimmed);
+                if (json.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    names = [];
+                    foreach (var role in json.RootElement.EnumerateArray())
+                    {
+                        var name = role.ValueKind == JsonValueKind.String
+                            ? role.GetString()
+                            : role.GetProperty("name").GetString();
+                        if (!string.IsNullOrEmpty(name))
+                        {
+                            names.Add(name);
+                        }
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                return [];
+            }
+
+            return names ?? [];
+        }
+
+        return string.IsNullOrEmpty(trimmed) ? [] : [trimmed];
+    }
+}

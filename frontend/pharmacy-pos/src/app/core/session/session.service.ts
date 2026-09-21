@@ -8,9 +8,9 @@ import { CurrentMembership, PlatformApi } from '../http/platform-api.service';
  * Holds the server-resolved session context for the shell and pages.
  *
  * Loaded once per sign-in from GET /platform/whoami: who the caller is, the active tenant, and
- * the roles/permissions the database grants them there. `hasPermission` gates navigation and
- * page affordances only — the API re-authorizes every request, and a caller without an active
- * membership resolves to `forbidden` here (the API answers 403).
+ * the membership behind it. Page visibility (`hasPermission`) is derived from the access token's
+ * Keycloak realm roles instead — the API re-authorizes every request, and a caller without an
+ * active membership resolves to `forbidden` here (the API answers 403).
  */
 @Injectable({ providedIn: 'root' })
 export class SessionService {
@@ -55,6 +55,6 @@ export class SessionService {
   }
 
   hasPermission(permission: string): boolean {
-    return this.context()?.permissions.includes(permission) ?? false;
+    return this.keycloak.hasPermission(permission);
   }
 }

@@ -86,21 +86,20 @@ SSH to the localhost-bound `KEYCLOAK_PORT`):
 2. Keep the realm password policy at least as strict as dev
    (12+ chars, upper/lower/digit, not-username).
 3. Clients:
-   - `pharmapos-api`: bearer-only resource server. Standard/direct flows OFF,
-     service accounts OFF, full-scope OFF.
-   - `pharmapos-web`: **public** client, Standard flow ON with PKCE S256,
-     valid redirect URIs `https://PUBLIC_HOST/*`, web origins
-     `https://PUBLIC_HOST`. No client secret (never ship one to a browser).
-4. Protocol mappers on `pharmapos-web` (the API re-validates everything server-side,
-   but it needs these claims to resolve identity):
+   - `pharmapos-api`: **confidential** client. Standard flow OFF, direct access grants ON
+     (login/refresh proxy), service accounts ON (Admin REST provisioning), full-scope OFF.
+     Generate a strong secret; store it as `KEYCLOAK_CLIENT_SECRET` (host env only).
+   - `pharmacos-web` is unused by the SPA (no redirects, no keycloak-js) and can be deleted.
+4. Protocol mappers (the API re-validates everything server-side, but it needs these claims):
    - `tenant_id` user attribute → access-token claim `tenant_id`.
-   - `permissions` user attribute (multivalued) → claim `permissions`.
-5. Realm roles `platform-admin` / `pharmacy-owner` (names only; authorization is
-   resolved from the application membership graph per ADR-0012, never from raw
-   role claims).
-6. Users: create real staff accounts with per-user `tenant_id` attributes. Brute-force
-   protection stays ON. No shared/demo accounts.
-7. Set frontend URL / hostname to `KEYCLOAK_HOSTNAME` so tokens carry the public
+   - Realm roles → access-token claim (standard `realm_access` or a `roles` array claim).
+5. Realm roles `platform-admin` / `pharmacy-owner` / `manager` / `cashier` / `inventory-staff`
+   (names must match the server `RealmRoles`; authorization reads them from the token).
+6. Service account: grant the `pharmacos-api` service account the `manage-users`
+   realm-management role so registration can provision users (create + role assignment only).
+7. Users: create real staff accounts with per-user `tenant_id` attributes and realm roles.
+   Brute-force protection stays ON. No shared/demo accounts.
+8. Set frontend URL / hostname to `KEYCLOAK_HOSTNAME` so tokens carry the public
    issuer the API allow-lists in `KEYCLOAK_PUBLIC_ISSUER`.
 
 Keycloak runs `start` (production mode) against its own `kcdb` Postgres with
@@ -134,9 +133,9 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 ./scripts/prod-smoke.sh https://pos.example.com
 ```
 
-Then create the first tenant + owner via the platform API (authenticated as a
-`platform-admin` Keycloak user), and walk
-[`production-checklist.md`](production-checklist.md) end to end before opening to users.
+Then register the first pharmacy at `https://pos.example.com/register` (creates the tenant
+and owner), and walk [`production-checklist.md`](production-checklist.md) end to end before
+opening to users.
 
 ## 7. Updates and rollback
 

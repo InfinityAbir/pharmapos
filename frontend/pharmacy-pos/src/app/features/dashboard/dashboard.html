@@ -76,13 +76,22 @@
     }
 
     @if (canReadInventory() && alerts(); as stock) {
-      <article class="card">
+      <article class="card card--alerts">
         <h2>{{ 'dashboard.inventoryAlerts' | t }}</h2>
-        <dl class="facts">
-          <div><dt>{{ 'dashboard.lowStock' | t }}</dt><dd>{{ stock.lowStockCount }} {{ 'dashboard.medicinesSuffix' | t }}</dd></div>
-          <div><dt>{{ 'dashboard.expiring' | t }}</dt><dd>{{ stock.expiringWithin30DaysCount }} {{ 'dashboard.batchesSuffix' | t }}</dd></div>
-          <div><dt>{{ 'dashboard.expiredStock' | t }}</dt><dd>{{ stock.expiredBatchCount }} {{ 'dashboard.batchesSuffix' | t }}</dd></div>
-        </dl>
+        <div class="alert-stats">
+          <div class="alert-stat alert-stat--warn">
+            <strong class="money">{{ stock.lowStockCount }}</strong>
+            <span>{{ 'dashboard.lowStock' | t }} {{ 'dashboard.medicinesSuffix' | t }}</span>
+          </div>
+          <div class="alert-stat alert-stat--warn">
+            <strong class="money">{{ stock.expiringWithin30DaysCount }}</strong>
+            <span>{{ 'dashboard.expiring' | t }} {{ 'dashboard.batchesSuffix' | t }}</span>
+          </div>
+          <div class="alert-stat alert-stat--bad">
+            <strong class="money">{{ stock.expiredBatchCount }}</strong>
+            <span>{{ 'dashboard.expiredStock' | t }} {{ 'dashboard.batchesSuffix' | t }}</span>
+          </div>
+        </div>
       </article>
     }
 
@@ -98,12 +107,10 @@
     }
 
     @if (canReadSales() && todaySales(); as today) {
-      <article class="card">
+      <article class="card card--hero">
         <h2>{{ 'dashboard.todaySales' | t }}</h2>
-        <dl class="facts">
-          <div><dt>{{ 'dashboard.transactions' | t }}</dt><dd>{{ today.saleCount }}</dd></div>
-          <div><dt>{{ 'dashboard.revenue' | t }}</dt><dd>{{ today.totalAmount | money }}</dd></div>
-        </dl>
+        <p class="hero-revenue money">{{ today.totalAmount | money }}</p>
+        <p class="hero-sub">{{ today.saleCount }} {{ 'dashboard.transactions' | t }}</p>
       </article>
     }
 

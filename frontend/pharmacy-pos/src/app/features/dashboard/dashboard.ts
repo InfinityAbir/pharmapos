@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PERMISSIONS } from '../../core/auth/permissions';
 import { KeycloakService } from '../../core/auth/keycloak.service';
@@ -28,6 +29,7 @@ export class Dashboard implements OnInit {
   private readonly keycloak = inject(KeycloakService);
   protected readonly session = inject(SessionService);
   protected readonly lang = inject(LanguageService);
+  private readonly router = inject(Router);
 
   protected readonly isAuthenticated = this.keycloak.isAuthenticated;
   protected readonly info = signal<PlatformInfo | undefined>(undefined);
@@ -45,7 +47,7 @@ export class Dashboard implements OnInit {
   }
 
   protected signIn(): void {
-    void this.keycloak.login();
+    void this.router.navigate(['/login']);
   }
 
   protected canReadCatalog(): boolean {

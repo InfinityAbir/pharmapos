@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace PharmaPOS.Api.Configuration;
+namespace PharmaPOS.Application.Common.Identity;
 
 /// <summary>
 /// Keycloak (OIDC) settings. Validated at startup so misconfiguration fails fast rather than
-/// silently accepting unauthenticated traffic.
+/// silently accepting unauthenticated traffic. Lives in Application so both the API composition
+/// root and the server-side Keycloak client can consume it without layering violations.
 /// </summary>
 public sealed class KeycloakOptions
 {
@@ -32,4 +33,17 @@ public sealed class KeycloakOptions
     /// metadata retrieval cannot be tampered with.
     /// </summary>
     public bool RequireHttpsMetadata { get; set; } = true;
+
+    /// <summary>
+    /// Confidential client used for server-side Keycloak calls (Resource Owner login proxy and
+    /// Admin REST user provisioning). The SPA never sees this client. Empty by default: the
+    /// login/register endpoints fail with a clear error until it is configured.
+    /// </summary>
+    public string ClientId { get; set; } = "pharmapos-api";
+
+    /// <summary>
+    /// Confidential-client secret. Never commit a real value — supply via environment
+    /// (<c>Keycloak__ClientSecret</c>), user-secrets or your secret store.
+    /// </summary>
+    public string ClientSecret { get; set; } = string.Empty;
 }

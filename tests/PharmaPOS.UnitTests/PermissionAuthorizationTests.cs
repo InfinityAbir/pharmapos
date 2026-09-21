@@ -32,88 +32,85 @@ public sealed class PermissionAuthorizationTests
     }
 
     [Fact]
-    public async Task Handler_grants_when_the_membership_graph_grants_the_permission()
+    public async Task Handler_grants_when_a_realm_role_grants_the_permission()
     {
         var requirement = new PermissionRequirement(Permissions.Platform.AuditRead);
-        var context = BuildContext(requirement, sub: "subject-1");
-        var resolver = new StubMembershipResolver(
-            new MemberAccess(
-                UserId: Guid.NewGuid(),
-                MembershipId: Guid.NewGuid(),
-                Email: "admin@pharmapos.local",
-                IsDefault: true,
-                Roles: ["Platform Admin"],
-                Permissions: [Permissions.Platform.AuditRead]));
+        var context = BuildContext(requirement, RealmRoles.PharmacyOwner);
 
-        await new PermissionAuthorizationHandler(resolver).HandleAsync(context);
+        await new PermissionAuthorizationHandler().HandleAsync(context);
 
         context.HasSucceeded.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Handler_denies_when_the_membership_lacks_the_permission()
+    public async Task Handler_denies_when_no_realm_role_grants_the_permission()
     {
         var requirement = new PermissionRequirement(Permissions.Platform.TenantsManage);
-        var context = BuildContext(requirement, sub: "subject-1");
-        var resolver = new StubMembershipResolver(
-            new MemberAccess(
-                UserId: Guid.NewGuid(),
-                MembershipId: Guid.NewGuid(),
-                Email: "owner@demo-pharmacy.local",
-                IsDefault: true,
-                Roles: ["Owner"],
-                Permissions: [Permissions.Platform.AuditRead]));
+        var context = BuildContext(requirement, RealmRoles.Cashier);
 
-        await new PermissionAuthorizationHandler(resolver).HandleAsync(context);
+        await new PermissionAuthorizationHandler().HandleAsync(context);
 
         context.HasSucceeded.Should().BeFalse();
     }
 
     [Fact]
-    public async Task Handler_denies_when_there_is_no_active_membership()
+    public async Task Handler_denies_when_the_principal_carries_no_roles()
     {
         var requirement = new PermissionRequirement(Permissions.Platform.AuditRead);
-        var context = BuildContext(requirement, sub: "stranger");
-
-        await new PermissionAuthorizationHandler(new StubMembershipResolver(null)).HandleAsync(context);
-
-        context.HasSucceeded.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task Handler_denies_when_the_principal_carries_no_identity()
-    {
-        var requirement = new PermissionRequirement(Permissions.Platform.AuditRead);
-        var identity = new ClaimsIdentity(authenticationType: "Test");
+        var identity = new ClaimsIdentity(
+            [new Claim("sub", "subject-1")],
+            authenticationType: "Test");
         var context = new AuthorizationHandlerContext(
             [requirement],
             new ClaimsPrincipal(identity),
             resource: null);
 
-        await new PermissionAuthorizationHandler(new StubMembershipResolver(null)).HandleAsync(context);
+        await new PermissionAuthorizationHandler().HandleAsync(context);
 
         context.HasSucceeded.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task Handler_denies_unknown_permissions_even_for_admins()
+    {
+        var requirement = new PermissionRequirement("tenant.nope.not_a_permission");
+        var context = BuildContext(requirement, RealmRoles.PlatformAdmin);
+
+        await new PermissionAuthorizationHandler().HandleAsync(context);
+
+        context.HasSucceeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Role_map_grants_every_catalog_permission_to_at_least_one_role()
+    {
+        foreach (var descriptor in Permissions.All)
+        {
+            RealmRoles.RolePermissions.Should().ContainKey(descriptor.Code);
+        }
+    }
+
+    [Fact]
+    public void Role_map_only_names_known_realm_roles()
+    {
+        foreach (var roles in RealmRoles.RolePermissions.Values)
+        {
+            roles.Should().OnlyContain(role => RealmRoles.All.Contains(role));
+        }
+    }
+
     private static AuthorizationHandlerContext BuildContext(
         PermissionRequirement requirement,
-        string sub)
+        params string[] roles)
     {
-        var identity = new ClaimsIdentity(
-            [new Claim("sub", sub)],
-            authenticationType: "Test");
+        var claims = new List<Claim> { new("sub", "subject-1") };
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+        var identity = new ClaimsIdentity(claims, authenticationType: "Test");
 
         return new AuthorizationHandlerContext(
             [requirement],
             new ClaimsPrincipal(identity),
             resource: null);
-    }
-
-    private sealed class StubMembershipResolver(MemberAccess? access) : IMembershipResolver
-    {
-        public Task<MemberAccess?> ResolveAccessAsync(
-            string subjectOrUsername,
-            CancellationToken cancellationToken = default)
-            => Task.FromResult(access);
     }
 }

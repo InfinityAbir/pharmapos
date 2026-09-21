@@ -1,0 +1,53 @@
+<section class="page auth">
+  <div class="panel auth__card">
+    <header class="page__head">
+      <div>
+        <p class="eyebrow">PharmaPOS</p>
+        <h1>{{ 'auth.loginTitle' | t }}</h1>
+        <p class="lede">{{ 'auth.loginLede' | t }}</p>
+      </div>
+    </header>
+
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    <form (ngSubmit)="submit()" #loginForm="ngForm">
+      <div class="fields">
+        <label class="wide">
+          {{ 'auth.email' | t }}
+          <input
+            type="email"
+            name="email"
+            [(ngModel)]="email"
+            required
+            autocomplete="username"
+          />
+        </label>
+        <label class="wide">
+          {{ 'auth.password' | t }}
+          <input
+            type="password"
+            name="password"
+            [(ngModel)]="password"
+            required
+            autocomplete="current-password"
+          />
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        class="button button--big button--block"
+        [disabled]="submitting() || loginForm.invalid"
+      >
+        {{ submitting() ? ('auth.signingIn' | t) : ('auth.signIn' | t) }}
+      </button>
+    </form>
+
+    <p class="muted">
+      {{ 'auth.noAccount' | t }}
+      <a routerLink="/register">{{ 'auth.createAccount' | t }}</a>
+    </p>
+  </div>
+</section>

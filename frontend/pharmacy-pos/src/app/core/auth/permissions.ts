@@ -1,7 +1,7 @@
 /**
  * Client-side mirrors of the server permission codes. The server is authoritative — these are
  * only used to decide which navigation entries and pages to show. Every request is re-checked
- * by the API against the database membership graph.
+ * by the API against the caller's Keycloak realm roles.
  */
 export const PERMISSIONS = {
   platformTenantsManage: 'platform.tenants.manage',
@@ -23,6 +23,40 @@ export const PERMISSIONS = {
   tenantReturnsRead: 'tenant.returns.read',
   tenantReturnsManage: 'tenant.returns.manage',
 } as const;
+
+/** Keycloak realm roles (mirror of the server RealmRoles). */
+export const ROLES = {
+  platformAdmin: 'platform-admin',
+  pharmacyOwner: 'pharmacy-owner',
+  manager: 'manager',
+  cashier: 'cashier',
+  inventoryStaff: 'inventory-staff',
+} as const;
+
+/**
+ * Which realm roles grant each permission (mirror of the server map). Used to derive page
+ * visibility from the access token's roles without an extra round-trip.
+ */
+export const ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> = {
+  [PERMISSIONS.platformTenantsManage]: [ROLES.platformAdmin],
+  [PERMISSIONS.platformUsersManage]: [ROLES.platformAdmin],
+  [PERMISSIONS.platformAuditRead]: [ROLES.platformAdmin, ROLES.pharmacyOwner],
+  [PERMISSIONS.tenantMembersManage]: [ROLES.platformAdmin, ROLES.pharmacyOwner],
+  [PERMISSIONS.tenantRolesManage]: [ROLES.platformAdmin, ROLES.pharmacyOwner],
+  [PERMISSIONS.tenantMedicinesRead]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.manager, ROLES.cashier, ROLES.inventoryStaff],
+  [PERMISSIONS.tenantMedicinesManage]: [ROLES.platformAdmin, ROLES.pharmacyOwner],
+  [PERMISSIONS.tenantPharmacyManage]: [ROLES.platformAdmin, ROLES.pharmacyOwner],
+  [PERMISSIONS.tenantInventoryRead]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.manager, ROLES.inventoryStaff],
+  [PERMISSIONS.tenantInventoryManage]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.inventoryStaff],
+  [PERMISSIONS.tenantPurchasingRead]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.manager],
+  [PERMISSIONS.tenantPurchasingManage]: [ROLES.platformAdmin, ROLES.pharmacyOwner],
+  [PERMISSIONS.tenantSalesRead]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.manager, ROLES.cashier],
+  [PERMISSIONS.tenantSalesManage]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.cashier],
+  [PERMISSIONS.tenantCustomersRead]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.manager, ROLES.cashier],
+  [PERMISSIONS.tenantCustomersManage]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.cashier],
+  [PERMISSIONS.tenantReturnsRead]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.manager, ROLES.cashier],
+  [PERMISSIONS.tenantReturnsManage]: [ROLES.platformAdmin, ROLES.pharmacyOwner, ROLES.cashier],
+};
 
 /** Permission catalog shown on the Roles page (mirrors the server catalog). */
 export interface PermissionDescriptor {

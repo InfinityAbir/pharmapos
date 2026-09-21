@@ -4,42 +4,31 @@ using PharmaPOS.Application.Common.Authorization;
 namespace PharmaPOS.Api.Authentication;
 
 /// <summary>
-/// Grants access when the database membership graph grants the required permission to the caller
-/// for the current tenant.
+/// Grants access when the caller's Keycloak realm roles grant the required permission.
 ///
-/// The token proves <i>who</i> the caller is (<c>sub</c> / <c>preferred_username</c>) and <i>which
-/// tenant</i> is active (<c>tenant_id</c>, consumed by Finbuckle before this handler runs).
-/// <i>What</i> the caller may do is resolved server-side from
-/// <c>ApplicationUser → TenantMembership → Role → Permission</c> via
-/// <see cref="IMembershipResolver"/>. Callers without an active membership in the current tenant
-/// resolve to <c>null</c> and are denied. Registered as scoped: the resolver needs the
-/// request-scoped tenant-filtered context.
+/// The token proves <i>who</i> the caller is (<c>sub</c> / <c>preferred_username</c>), <i>which
+/// tenant</i> is active (<c>tenant_id</c>, consumed by Finbuckle before this handler runs) and
+/// <i>what</i> the caller may do (<c>realm_access</c> roles, mapped to role claims at
+/// authentication time). The mapping lives in <see cref="RealmRoles"/>; callers whose realm
+/// roles grant none of the required roles are denied. Registered as a singleton: no
+/// request-scoped membership lookup is needed anymore.
 /// </summary>
 public sealed class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
-    private readonly IMembershipResolver _membershipResolver;
-
-    public PermissionAuthorizationHandler(IMembershipResolver membershipResolver)
-        => _membershipResolver = membershipResolver;
-
-    protected override async Task HandleRequirementAsync(
+    protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         PermissionRequirement requirement)
     {
-        var subject = context.User.FindFirst("sub")?.Value;
-        var username = context.User.FindFirst("preferred_username")?.Value;
-        var identity = !string.IsNullOrWhiteSpace(subject) ? subject : username;
-
-        if (string.IsNullOrWhiteSpace(identity))
+        if (!RealmRoles.RolePermissions.TryGetValue(requirement.Permission, out var allowedRoles))
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        var access = await _membershipResolver.ResolveAccessAsync(identity);
-
-        if (access is not null && access.Permissions.Contains(requirement.Permission))
+        if (allowedRoles.Any(context.User.IsInRole))
         {
             context.Succeed(requirement);
         }
+
+        return Task.CompletedTask;
     }
 }

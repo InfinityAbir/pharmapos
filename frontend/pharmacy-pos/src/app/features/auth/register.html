@@ -1,0 +1,99 @@
+<section class="page auth">
+  <div class="panel auth__card">
+    <header class="page__head">
+      <div>
+        <p class="eyebrow">PharmaPOS</p>
+        <h1>{{ 'auth.registerTitle' | t }}</h1>
+        <p class="lede">{{ 'auth.registerLede' | t }}</p>
+      </div>
+    </header>
+
+    @if (error(); as message) {
+      <p class="alert" role="alert">{{ message }}</p>
+    }
+
+    <form (ngSubmit)="submit()" #registerForm="ngForm">
+      <div class="fields">
+        <label class="wide">
+          {{ 'auth.pharmacyName' | t }}
+          <input
+            type="text"
+            name="pharmacyName"
+            [(ngModel)]="pharmacyName"
+            required
+            maxlength="160"
+            autocomplete="organization"
+          />
+        </label>
+        <label>
+          {{ 'auth.firstName' | t }}
+          <input
+            type="text"
+            name="firstName"
+            [(ngModel)]="firstName"
+            required
+            maxlength="100"
+            autocomplete="given-name"
+          />
+        </label>
+        <label>
+          {{ 'auth.lastName' | t }}
+          <input
+            type="text"
+            name="lastName"
+            [(ngModel)]="lastName"
+            required
+            maxlength="100"
+            autocomplete="family-name"
+          />
+        </label>
+        <label class="wide">
+          {{ 'auth.email' | t }}
+          <input
+            type="email"
+            name="email"
+            [(ngModel)]="email"
+            required
+            autocomplete="email"
+          />
+        </label>
+        <label>
+          {{ 'auth.password' | t }}
+          <input
+            type="password"
+            name="password"
+            [(ngModel)]="password"
+            required
+            minlength="12"
+            autocomplete="new-password"
+            [attr.aria-describedby]="'password-hint'"
+          />
+        </label>
+        <label>
+          {{ 'auth.confirmPassword' | t }}
+          <input
+            type="password"
+            name="confirmPassword"
+            [(ngModel)]="confirmPassword"
+            required
+            autocomplete="new-password"
+          />
+        </label>
+      </div>
+      <p class="muted small" id="password-hint">{{ 'auth.passwordHint' | t }}</p>
+
+      <button
+        type="submit"
+        class="button button--big button--block"
+        [disabled]="submitting() || registerForm.invalid"
+      >
+        {{ submitting() ? ('auth.registering' | t) : ('auth.createAccount' | t) }}
+      </button>
+    </form>
+
+    <p class="muted">
+      {{ 'auth.haveAccount' | t }}
+      <a routerLink="/login">{{ 'auth.signIn' | t }}</a>
+    </p>
+  </div>
+</section>

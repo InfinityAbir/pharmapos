@@ -78,6 +78,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 ErrorCategory.Conflict => StatusCodes.Status409Conflict,
                 ErrorCategory.Forbidden => StatusCodes.Status403Forbidden,
                 ErrorCategory.BusinessRule => StatusCodes.Status422UnprocessableEntity,
+                ErrorCategory.Unauthorized => StatusCodes.Status401Unauthorized,
                 _ => StatusCodes.Status400BadRequest,
             };
 
@@ -106,6 +107,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         ErrorCategory.Conflict => "The request conflicts with the current state of the resource.",
         ErrorCategory.Forbidden => "You are not permitted to perform this operation.",
         ErrorCategory.BusinessRule => "A business rule was violated.",
+        ErrorCategory.Unauthorized => "Authentication is required.",
         _ => "The request could not be processed.",
     };
 }

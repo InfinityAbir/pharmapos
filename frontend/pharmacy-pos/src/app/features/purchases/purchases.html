@@ -233,7 +233,7 @@
             {{ purchase.status }}
           </span>
         </h2>
-        <dl class="facts">
+        <dl class="facts facts--totals">
           @if (purchase.supplierInvoiceNumber) {
             <div><dt>{{ 'purchases.invoiceNo' | t }}</dt><dd>{{ purchase.supplierInvoiceNumber }}</dd></div>
           }

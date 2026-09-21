@@ -119,7 +119,7 @@ The app is fully bilingual (বাংলা / English toggle) so it also works f
 
 ### Cross-cutting
 - Bangla/English toggle everywhere, Bengali digits, Bangla receipts
-- Role-based permissions (Owner, Manager, Cashier, Inventory Staff) resolved server-side per request
+- Role-based permissions (Owner, Manager, Cashier, Inventory Staff) from Keycloak realm roles
 - Append-only audit log for logins, price changes, stock moves, sales, returns and config changes
 
 ---
@@ -130,11 +130,11 @@ The app is fully bilingual (বাংলা / English toggle) so it also works f
 - .NET 10, ASP.NET Core Web API, Clean Architecture, MediatR 12.5 (CQRS), FluentValidation 12.1.1
 - Entity Framework Core 10 + Npgsql, PostgreSQL 17
 - Finbuckle.MultiTenant 10.x (shared DB + `TenantId` discriminator, EF global query filters)
-- Keycloak 26 (OIDC, Authorization Code + PKCE S256 SPA, bearer-only API)
+- Keycloak 26 (app-owned login/registration via server-side proxy, realm-role authorization)
 - Serilog structured logging, Swashbuckle, HealthChecks (liveness + Postgres readiness)
 
 **Frontend:**
-- Angular 22 (zoneless, standalone components), TypeScript, `keycloak-js` 26, RxJS, Vitest
+- Angular 22 (zoneless, standalone components), TypeScript, RxJS, Vitest
 
 **Infrastructure & Quality:**
 - Docker + Compose v2 (dev stack + hardened production stack with TLS reverse proxy)
@@ -220,7 +220,7 @@ The integration tests start an ephemeral PostgreSQL container, so Docker must be
 ## Configuration
 
 - **Environment:** Copy `.env.example` → `.env` for local dev; `.env.production.example` → `.env.production` for production (`docker compose -f docker-compose.prod.yml --env-file .env.production up -d`). Never commit filled files.
-- **Keycloak:** Realm, clients (`pharmapos-api` bearer-only, `pharmapos-web` public + PKCE), `tenant_id`/`permissions` protocol mappers and demo users live in `deploy/keycloak/realm-export.json` (dev only). Production builds its realm once per `docs/production.md` — the dev export is never imported there.
+- **Keycloak:** Realm, confidential `pharmapos-api` client (login proxy + Admin REST), `tenant_id`/role protocol mappers and demo users live in `deploy/keycloak/realm-export.json` (dev only). Production builds its realm once per `docs/production.md` — the dev export is never imported there.
 - **CORS:** Explicit origin allow-list (`Cors__AllowedOrigins`), no wildcards. The SPA origin must be listed or calls fail by design.
 - **Language:** In-app বাংলা / English toggle, persisted; receipts follow the active language.
 - **Migrations:** Two DbContexts (`AppDbContext`, `TenantStoreDbContext`). Dev auto-migrates + seeds on startup; production migrates explicitly via `scripts/migrate-prod.sh` (CI-built EF bundles).
@@ -234,7 +234,7 @@ The integration tests start an ephemeral PostgreSQL container, so Docker must be
 |---|---|
 | Authentication | Keycloak OIDC; short-lived access tokens, rotation + reuse detection owned by Keycloak — the API only validates |
 | Tenant isolation | Server-resolved from the validated `tenant_id` claim; EF global filters; foreign-`TenantId` writes rejected; covered by `TenantIsolationTests` |
-| Authorization | `HasPermission` policies re-evaluated per request from the DB membership graph; token claims never trusted as outcomes |
+| Authorization | `HasPermission` policies resolved from Keycloak realm roles on the validated token; every request re-checked |
 | Transport | TLS terminated at the production reverse proxy (HSTS, modern ciphers); `RequireHttpsMetadata` enforced |
 | Headers | `nosniff`, `DENY` framing, `no-referrer`, locked-down permissions policy, API `default-src 'none'`, SPA CSP at the proxy |
 | Abuse resistance | Per-user/IP rate limiting + strict auth-endpoint policy, mirrored at the proxy |

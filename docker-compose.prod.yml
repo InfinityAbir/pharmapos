@@ -168,6 +168,7 @@ services:
       Database__SeedDemoData: "false"
       Keycloak__Authority: "http://keycloak:8080/realms/${KEYCLOAK_REALM:-pharmapos}"
       Keycloak__Audience: "${KEYCLOAK_AUDIENCE:-pharmapos-api}"
+      Keycloak__ClientSecret: "${KEYCLOAK_CLIENT_SECRET:?KEYCLOAK_CLIENT_SECRET is required}"
       Keycloak__ValidIssuers__0: "${KEYCLOAK_PUBLIC_ISSUER:?KEYCLOAK_PUBLIC_ISSUER is required}"
       Keycloak__RequireHttpsMetadata: "true"
       Cors__AllowedOrigins__0: "https://${PUBLIC_HOST:?PUBLIC_HOST is required}"

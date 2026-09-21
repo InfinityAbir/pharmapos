@@ -26,9 +26,22 @@ export const LANG_EN: Record<string, string> = {
   'nav.sales': 'Sales',
   'nav.customers': 'Customers',
   'nav.reports': 'Reports',
+  'nav.sell': 'Sell',
+  'nav.manage': 'Manage',
+  'nav.admin': 'Administration',
+
+  // Shell chrome
+  'shell.menu': 'Open navigation',
+  'shell.closeMenu': 'Close navigation',
+  'shell.collapse': 'Collapse sidebar',
+  'shell.expand': 'Expand sidebar',
+  'theme.label': 'Theme',
+  'theme.switchToDark': 'Switch to dark mode',
+  'theme.switchToLight': 'Switch to light mode',
 
   // Shared
   'common.loading': 'Loading…',
+  'common.skipToContent': 'Skip to content',
   'common.searching': 'Searching…',
   'common.save': 'Save',
   'common.saving': 'Saving…',
@@ -658,4 +671,32 @@ export const LANG_EN: Record<string, string> = {
   'permdesc.tenant.customers.manage': 'Create and manage customers.',
   'permdesc.tenant.returns.read': 'View sale returns and refunds.',
   'permdesc.tenant.returns.manage': 'Process sale returns and refunds.',
+
+  // Authentication pages
+  'auth.loginTitle': 'Sign in',
+  'auth.loginLede': 'Use your pharmacy account to continue.',
+  'auth.registerTitle': 'Create your pharmacy',
+  'auth.registerLede': 'Registers a new pharmacy tenant and signs you in as its owner.',
+  'auth.email': 'Email',
+  'auth.password': 'Password',
+  'auth.confirmPassword': 'Confirm password',
+  'auth.firstName': 'First name',
+  'auth.lastName': 'Last name',
+  'auth.pharmacyName': 'Pharmacy name',
+  'auth.signIn': 'Sign in',
+  'auth.signingIn': 'Signing in…',
+  'auth.createAccount': 'Create account',
+  'auth.registering': 'Creating account…',
+  'auth.noAccount': 'New to PharmaPOS? Create your pharmacy account.',
+  'auth.haveAccount': 'Already have an account? Sign in.',
+  'auth.passwordHint': 'At least 12 characters with upper-case, lower-case and a digit.',
+  'auth.passwordMismatch': 'The passwords do not match.',
+
+  // Authentication error codes
+  'errors.auth_invalid_credentials': 'Invalid email or password.',
+  'errors.auth_session_expired': 'The session has expired. Sign in again.',
+  'errors.auth_email_taken': 'An account with this email already exists.',
+  'errors.auth_keycloak_unavailable': 'The login service is unreachable. Try again shortly.',
+  'errors.auth_keycloak_not_configured': 'Sign-in is not configured on this server.',
+  'errors.auth_keycloak_error': 'The login service returned an error. Try again shortly.',
 };

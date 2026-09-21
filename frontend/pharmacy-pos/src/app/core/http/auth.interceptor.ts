@@ -1,18 +1,22 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { from, switchMap } from 'rxjs';
+import { catchError, from, switchMap, throwError } from 'rxjs';
 import { KeycloakService } from '../auth/keycloak.service';
 
 /**
- * Attaches the Keycloak access token to outbound API calls. The token is refreshed (via Keycloak)
- * when it is close to expiry, never minted locally.
+ * Attaches the access token to outbound API calls. The token is refreshed through the API when
+ * close to expiry, never minted locally.
  *
- * A 401 is intentionally surfaced to the caller rather than triggering a redirect here: the route
- * guard owns the login flow, and redirecting from the interceptor turns any server-side rejection
- * into an infinite login loop.
+ * A single 401 triggers one refresh-and-retry (the token may have expired mid-session); anything
+ * beyond that surfaces to the caller. Auth endpoints themselves are never retried — a rejected
+ * login or refresh is a real answer, and retrying it turns server rejections into loops.
  */
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const keycloak = inject(KeycloakService);
+
+  if (request.url.includes('/auth/login') || request.url.includes('/auth/refresh') || request.url.includes('/auth/register')) {
+    return next(request);
+  }
 
   return from(keycloak.ensureValidToken()).pipe(
     switchMap((token) => {
@@ -20,7 +24,20 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
         : request;
 
-      return next(authorized);
+      return next(authorized).pipe(
+        catchError((error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 401 && token) {
+            return from(keycloak.ensureValidToken()).pipe(
+              switchMap((fresh) =>
+                fresh && fresh !== token
+                  ? next(request.clone({ setHeaders: { Authorization: `Bearer ${fresh}` } }))
+                  : throwError(() => error),
+              ),
+            );
+          }
+          return throwError(() => error);
+        }),
+      );
     }),
   );
 };

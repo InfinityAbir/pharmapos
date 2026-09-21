@@ -6,6 +6,16 @@ import { PERMISSIONS } from './core/auth/permissions';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   {
+    path: 'login',
+    title: 'Sign in · PharmaPOS',
+    loadComponent: () => import('./features/auth/login').then((m) => m.LoginPage),
+  },
+  {
+    path: 'register',
+    title: 'Create pharmacy · PharmaPOS',
+    loadComponent: () => import('./features/auth/register').then((m) => m.RegisterPage),
+  },
+  {
     path: 'dashboard',
     title: 'Dashboard · PharmaPOS',
     canActivate: [authGuard],

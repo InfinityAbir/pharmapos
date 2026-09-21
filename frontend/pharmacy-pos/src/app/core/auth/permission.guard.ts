@@ -4,9 +4,9 @@ import { KeycloakService } from './keycloak.service';
 import { SessionService } from '../session/session.service';
 
 /**
- * Route gate for a server-resolved permission. Anonymous visitors are sent through the Keycloak
- * login flow; authenticated callers without the permission fall back to the dashboard. The API
- * remains the real authority — this only avoids rendering screens the caller cannot use.
+ * Route gate for a realm-role-derived permission. Anonymous visitors go to the login page;
+ * authenticated callers without the permission fall back to the dashboard. The API remains
+ * the real authority — this only avoids rendering screens the caller cannot use.
  */
 export function permissionGuard(requiredPermission: string): CanActivateFn {
   return async (): Promise<boolean> => {
@@ -15,7 +15,7 @@ export function permissionGuard(requiredPermission: string): CanActivateFn {
     const router = inject(Router);
 
     if (!keycloak.isAuthenticated()) {
-      await keycloak.login();
+      await router.navigate(['/login']);
       return false;
     }
 

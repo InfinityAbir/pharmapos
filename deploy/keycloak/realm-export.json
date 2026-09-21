@@ -38,6 +38,24 @@
         "description": "Owner of a single pharmacy tenant.",
         "composite": false,
         "clientRole": false
+      },
+      {
+        "name": "manager",
+        "description": "Shift supervision and read-only operational access.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "cashier",
+        "description": "Checkout operation, customers, returns and sales history.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "inventory-staff",
+        "description": "Stock receiving, adjustments and expiry handling.",
+        "composite": false,
+        "clientRole": false
       }
     ]
   },
@@ -45,15 +63,16 @@
     {
       "clientId": "pharmapos-api",
       "name": "PharmaPOS API",
-      "description": "Bearer-only resource server. Receives access tokens; never initiates login.",
+      "description": "Confidential backend client: validates tokens, proxies Resource Owner login/refresh and provisions users via the Admin REST API. Secret lives in server config, never in the SPA. Dev secret only — production realms use their own.",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "bearerOnly": true,
+      "bearerOnly": false,
       "standardFlowEnabled": false,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "secret": "dev-pharmapos-api-secret-change-me-in-production",
       "consentRequired": false,
       "fullScopeAllowed": false
     },
@@ -194,6 +213,17 @@
         ],
         "permissions": [
           "platform.audit.read"
+        ]
+      }
+    },
+    {
+      "username": "service-account-pharmapos-api",
+      "enabled": true,
+      "emailVerified": true,
+      "serviceAccountClientId": "pharmapos-api",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users"
         ]
       }
     }

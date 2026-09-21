@@ -1,8 +1,12 @@
+/* Receipt — presented as a paper slip on screen, reduced to pure content on
+ * paper. Print behavior preserved: chrome hides, borders fall away. */
+
 .receipt {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  padding: 1.5rem 1.5rem 1.25rem;
   max-width: 26rem;
   display: flex;
   flex-direction: column;
@@ -11,8 +15,8 @@
 }
 
 .receipt__shop { text-align: center; }
-.receipt__shop h2 { margin: 0; font-size: 1.2rem; }
-.receipt__shop p { margin: 0.15rem 0 0; color: var(--text-muted); font-size: 0.8rem; }
+.receipt__shop h2 { margin: 0; font-size: 1.25rem; letter-spacing: -0.01em; }
+.receipt__shop p { margin: 0.15rem 0 0; color: var(--color-text-muted); font-size: 0.8rem; }
 
 .receipt__meta,
 .receipt__totals {
@@ -31,71 +35,58 @@
 
 .receipt__meta dt,
 .receipt__totals dt {
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .receipt__meta dd,
 .receipt__totals dd {
   margin: 0;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.receipt__totals {
+  border-top: 2px solid var(--color-text);
+  padding-top: 0.5rem;
 }
 
 .receipt__totals .grand {
-  border-top: 1px dashed var(--border);
-  padding-top: 0.35rem;
-  font-size: 1.02rem;
+  font-size: 1.05rem;
 }
 
-table { width: 100%; border-collapse: collapse; }
+.receipt table { width: 100%; border-collapse: collapse; }
 
-thead th {
+.receipt thead th {
   text-align: left;
-  font-size: 0.72rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border-strong);
   padding: 0.3rem 0;
 }
 
-tbody td {
+.receipt tbody td {
   padding: 0.35rem 0;
-  border-bottom: 1px dotted var(--border);
+  border-bottom: 1px dotted var(--color-border);
   vertical-align: top;
+  font-variant-numeric: tabular-nums;
 }
-
-.nowrap { white-space: nowrap; }
 
 .receipt__footer {
   margin: 0;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-size: 0.8rem;
+  border-top: 1px dashed var(--color-border-strong);
+  padding-top: 0.7rem;
 }
-
-.muted { color: var(--text-muted); margin: 0; }
-.small { font-size: 0.78rem; }
-
-.button {
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  border: 0;
-  border-radius: 9px;
-  background: var(--accent-strong);
-  color: #fff;
-  cursor: pointer;
-}
-
-.button:hover { background: var(--accent); }
 
 @media print {
-  .no-print { display: none; }
-
   .receipt {
     border: 0;
     border-radius: 0;
+    box-shadow: none;
     max-width: none;
     padding: 0;
   }

@@ -1,6 +1,7 @@
 # ADR-0012: Server-side authorization via the membership graph
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0013 (authorization moved to Keycloak realm roles; the
+  membership data and Team/whoami surfaces are retained)
 - **Date:** 2026-09-20
 - **Phase:** 1 (identity & tenancy)
 

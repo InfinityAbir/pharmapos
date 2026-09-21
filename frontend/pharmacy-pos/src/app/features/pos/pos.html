@@ -32,24 +32,28 @@
       }
 
       <div class="pos">
-        <section class="panel">
-          <label>
-            {{ 'pos.searchScan' | t }}
-            <input
-              type="text"
-              name="search"
-              [(ngModel)]="search"
-              (ngModelChange)="onSearchInput()"
-              (keydown.enter)="onSearchEnter()"
-              [placeholder]="'pos.searchPlaceholder' | t"
-              autocomplete="off"
-            />
+        <section class="panel pos-search" aria-label="Medicine search">
+          <label class="scan">
+            <span class="scan__label">{{ 'pos.searchScan' | t }}</span>
+            <span class="scan__box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              <input
+                type="text"
+                name="search"
+                [(ngModel)]="search"
+                (ngModelChange)="onSearchInput()"
+                (keydown.enter)="onSearchEnter()"
+                [placeholder]="'pos.searchPlaceholder' | t"
+                autocomplete="off"
+                autofocus
+              />
+            </span>
           </label>
 
           @if (searching()) {
             <p class="muted">{{ 'common.searching' | t }}</p>
           } @else if (results().length === 0) {
-            <p class="muted">{{ 'pos.noMedicines' | t }}</p>
+            <p class="empty">{{ 'pos.noMedicines' | t }}</p>
           } @else {
             @if (showingCached()) {
               <p class="notice" role="status">{{ 'offline.cachedResults' | t }}</p>
@@ -70,11 +74,14 @@
           }
         </section>
 
-        <section class="panel">
-          <h2>{{ 'pos.cart' | t }} ({{ cart.length }})</h2>
+        <section class="panel pos-cart" aria-label="Cart">
+          <div class="cart-head">
+            <h2>{{ 'pos.cart' | t }}</h2>
+            <span class="badge" aria-label="cart count">{{ cart.length }}</span>
+          </div>
 
           @if (cart.length === 0) {
-            <p class="muted">{{ 'pos.cartEmpty' | t }}</p>
+            <p class="empty">{{ 'pos.cartEmpty' | t }}</p>
           } @else {
             <ul class="cart">
               @for (line of cart; track line.medicineId) {
@@ -233,34 +240,33 @@
               <button type="button" class="link" (click)="addPayRow()">{{ 'pos.splitPayment' | t }}</button>
             }
 
-            <dl class="facts">
-              <div><dt>{{ 'pos.subtotalEst' | t }}</dt><dd>{{ estimateSubtotal() | money }}</dd></div>
-              <div><dt>{{ 'pos.discountsEst' | t }}</dt><dd>{{ estimateLineDiscount() + (headerDiscount || 0) | money }}</dd></div>
-              <div>
-                <dt>{{ 'pos.totalEst' | t }}</dt>
-                <dd><strong>{{ estimateTotal() | money }}</strong></dd>
-              </div>
-              <div><dt>{{ 'pos.paid' | t }}</dt><dd>{{ paidTotal() | money }}</dd></div>
-              <div>
-                <dt>{{ 'pos.changeDue' | t }}</dt>
-                <dd><strong>{{ changeDue() | money }}</strong></dd>
-              </div>
-            </dl>
+            <div class="total-bar">
+              <dl class="facts facts--light">
+                <div><dt>{{ 'pos.subtotalEst' | t }}</dt><dd class="money">{{ estimateSubtotal() | money }}</dd></div>
+                <div><dt>{{ 'pos.discountsEst' | t }}</dt><dd class="money">{{ estimateLineDiscount() + (headerDiscount || 0) | money }}</dd></div>
+                <div><dt>{{ 'pos.paid' | t }}</dt><dd class="money">{{ paidTotal() | money }}</dd></div>
+                <div><dt>{{ 'pos.changeDue' | t }}</dt><dd class="money">{{ changeDue() | money }}</dd></div>
+              </dl>
+              <p class="total-hero">
+                <span>{{ 'pos.totalEst' | t }}</span>
+                <strong class="money">{{ estimateTotal() | money }}</strong>
+              </p>
 
-            <button
-              type="button"
-              class="button button--big"
-              (click)="complete()"
-              [disabled]="completing() || queue.isSyncing() || cart.length === 0"
-            >
-              @if (completing() || queue.isSyncing()) {
-                {{ queue.isSyncing() ? ('offline.syncing' | t) : ('pos.completing' | t) }}
-              } @else if (!connectivity.online()) {
-                {{ 'offline.queueSale' | t }}
-              } @else {
-                {{ 'pos.completeSale' | t }} · {{ estimateTotal() | money }}
-              }
-            </button>
+              <button
+                type="button"
+                class="button button--big button--block button--light"
+                (click)="complete()"
+                [disabled]="completing() || queue.isSyncing() || cart.length === 0"
+              >
+                @if (completing() || queue.isSyncing()) {
+                  {{ queue.isSyncing() ? ('offline.syncing' | t) : ('pos.completing' | t) }}
+                } @else if (!connectivity.online()) {
+                  {{ 'offline.queueSale' | t }}
+                } @else {
+                  {{ 'pos.completeSale' | t }} · {{ estimateTotal() | money }}
+                }
+              </button>
+            </div>
           }
         </section>
       </div>

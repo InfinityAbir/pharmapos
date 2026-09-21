@@ -7,6 +7,7 @@ using PharmaPOS.Application.Common.Auditing;
 using PharmaPOS.Application.Common.Authorization;
 using PharmaPOS.Application.Common.Catalog;
 using PharmaPOS.Application.Common.Customers;
+using PharmaPOS.Application.Common.Identity;
 using PharmaPOS.Application.Common.Inventory;
 using PharmaPOS.Application.Common.Purchasing;
 using PharmaPOS.Application.Common.Reporting;
@@ -62,8 +63,13 @@ public static class DependencyInjection
 
         services.AddScoped<IMembershipResolver, MembershipResolver>();
         services.AddScoped<IPlatformTenantStore, PlatformTenantStore>();
+        services.AddScoped<ITenantProvisioning, TenantProvisioning>();
         services.AddScoped<ITenantRoleRepository, TenantRoleRepository>();
         services.AddScoped<ITenantMembershipRepository, TenantMembershipRepository>();
+
+        // Server-side Keycloak client (login/refresh proxy, user provisioning). All Keycloak
+        // traffic stays here so the confidential client secret never reaches the browser.
+        services.AddHttpClient<IKeycloakClient, KeycloakClient>();
 
         services.AddScoped<IMedicineRepository, MedicineRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
